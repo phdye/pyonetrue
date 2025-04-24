@@ -1,0 +1,55 @@
+#!/usr/bin/env python3
+
+"""
+Usage:
+  pyonetrue <input_file_or_package> [--output=<file>] [--module] [--omit-main]
+  pyonetrue -h | --help
+  pyonetrue --version
+
+Options:
+  -h --help         Show this screen.
+  --version         Show version.
+  --output=<file>   Write result to <file> [default: stdout]
+  --module          Output in pure module mode (no __main__ block)
+  --omit-main       Remove any if __name__ == '__main__' block
+"""
+
+import sys
+from pathlib import Path
+from docopt import docopt
+from cleanedit import analyze_source, rebuild_source_from_spans
+from pyonetrue import flatten_package_to_buffer, reorder_top_level_spans
+
+__version__ = '0.3.0'
+
+def main():
+    args = docopt(__doc__, version=__version__)
+    target = args['<input_file_or_package>']
+    outfile = args['--output']
+    omit_main = args['--omit-main'] or args['--module']
+
+    try:
+        input_path = Path(target)
+        if input_path.exists():
+            source = input_path.read_text()
+            package = input_path.stem
+        else:
+            source = flatten_package_to_buffer(target)
+            package = target
+    except Exception as e:
+        sys.exit(f"[pyonetrue] Error loading input: {e}")
+
+    spans = analyze_source(source)
+    (imports, reordered_spans) = reorder_top_level_spans(package, spans, omit_main=omit_main, )
+    print(f"[pyonetrue] Found {len(imports)} imports and {len(reordered_spans)} other spans", file=sys.stderr)
+    
+    output = ''.join([s.text for s in imports]) + '\n'
+    output += '\n'.join([s.text for s in reordered_spans])
+
+    if outfile == 'stdout':
+        print(output)
+    else:
+        Path(outfile).write_text(output)
+
+if __name__ == '__main__':
+    main()
