@@ -1,36 +1,54 @@
-from .classify import (
-    is_import_span,
-    is_classdef_span,
-    is_functiondef_span,
-    is_main_guard_span,
+from .extract_ast import extract_spans, Span
+
+from .flattening import (
+        FlatteningContext,
+        FlatteningModule,
 )
 
-from .extract import (
-    extract_defined_names,
-    extract_used_names,
-    extract_main_guard_span,
+from .normalize_imports import (
+    normalize_imports,
+    format_plain_import,
+    format_from_import,
+    is_stdlib_module,
+    set_line_length,
+    get_line_length,
+    ImportEntry,
 )
 
-from .gather import (
-    gather_class_and_func_names,
-    gather_imported_names,
+from .package import (
+    build_flattening_context,
+    populate_flattening_context,
+    generate_flattened_spans,
+    write_flattened_output,
+    run_cli_logic,
+    CliOptions,
 )
 
-from .normalize import normalize_import_spans
-from .reorder import reorder_top_level_spans
-from .flatten import flatten_package_to_buffer
+from .cli import __version__, main
 
 __all__ = [
-    "extract_defined_names",
-    "extract_used_names",
-    "extract_main_guard_span",
-    "flatten_package_to_buffer",
-    "gather_class_and_func_names",
-    "gather_imported_names",
-    "is_import_span",
-    "is_classdef_span",
-    "is_functiondef_span",
-    "is_main_guard_span",
-    "normalize_import_spans",
-    "reorder_top_level_spans",
+# cli
+    "__version__",
+    "main",
+# extract_ast
+    "extract_spans",
+    "Span",
+# flattening
+    "FlatteningContext",
+    "FlatteningModule",
+# normailize_imports :
+    "normalize_imports",
+    "format_plain_import",
+    "format_from_import",
+    "is_stdlib_module",
+    "set_line_length",
+    "get_line_length",
+    "ImportEntry",
+# package
+    "build_flattening_context",
+    "populate_flattening_context",
+    "generate_flattened_spans",
+    "write_flattened_output",
+    "run_cli_logic",
+    "CliOptions",
 ]

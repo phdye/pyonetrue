@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include doc/0.5/USAGE.txt
+
+recursive-include src/pyonetrue *.py
+recursive-include tests *.py

@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""
+Usage:
+  run-tests [options] [<pytest-args>...]
+
+Options:
+  --module <name-or-path>   Also test a specific module <name> or path. If a bare name,
+                            resolves to flat/<name>.py
+  --tmp-packages            Enable tmp-packages symlink for module name. Only needed 
+                            if a sibling module must also be tested.
+  <pytest-args>             Additional arguments passed directly to pytest.
+"""
+
+import os
+import sys
+import subprocess
+from pathlib import Path
+import shutil
+
+from vendor.docopt import docopt
+
+args = docopt(__doc__)
+
+# Invalidate cached imports to prevent stale module issues
+import sys
+for key in list(sys.modules):
+    if key.startswith("cleanedit"):
+        del sys.modules[key]
+import importlib
+importlib.invalidate_caches()
+
+# Get a copy of the current environment
+env = os.environ.copy()
+
+# Optionally include a module path
+module = args["--module"]
+use_tmp = args["--tmp-packages"]
+
+if module:
+    if "/" in module or module.endswith(".py"):
+        module_path = Path(module)
+    else:
+        module_path = Path(f"flat/{module}.py")
+    if not module_path.exists():
+        print(f"[ERROR] Module {module_path} does not exist.", file=sys.stderr)
+        sys.exit(1)
+    if use_tmp:
+        # Create tmp-packages/<name>.py symlink pointing to flat/<name>.py
+        tmp_pkg_dir = ( Path("flat/tmp-packages") / module )
+        tmp_pkg_dir.mkdir(parents=True, exist_ok=True)
+        symlink_py = tmp_pkg_dir / module_path.name
+        # Create a symlink to the module in the tmp-packages directory
+        # This is necessary for pytest to find the module
+        # when running from the tmp-packages directory
+        try:
+            if symlink_py.exists() or symlink_py.is_symlink():
+                symlink_py.unlink()
+            base = module_path.parent.resolve()
+            target = tmp_pkg_dir.resolve()
+            rel_path = Path(os.path.relpath(base, target)) / module_path.name
+            # relpath = module_path.parent.resolve().relative_to(tmp_pkg_dir.resolve())
+            print(f"[INFO] Creating symlink {symlink_py} -> {rel_path}")
+            symlink_py.symlink_to(rel_path)
+        except Exception as e:
+            print(f"[WARN] Failed to create symlink: {e}", file=sys.stderr)
+        env["PYTHONPATH"] = tmp_pkg_dir
+    else:
+        env["PYTHONPATH"] = os.path.dirname(module_path)
+else:
+    # Set environment variables
+    env["PYTHONPATH"] = "src"
+
+# Include additional pytest arguments
+# Always include tests/ directory
+command = ["pytest", "tests"] + args["<pytest-args>"] or []
+
+# Run pytest
+result = subprocess.run(command, env=env)
+if result.returncode == 0:
+    shutil.rmtree(tmp_pkg_dir, ignore_errors=True)
+sys.exit(result.returncode)

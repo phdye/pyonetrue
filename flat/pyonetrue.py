@@ -1347,5 +1347,3 @@ def docopt(doc, argv=None, help=True, version=None, options_first=False):
     raise DocoptExit()
 
 
-
-exit(main(sys.argv))

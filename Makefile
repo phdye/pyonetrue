@@ -1,13 +1,15 @@
 NAME           := pyonetrue
 PROJECT        := $${PWD\#\#*/}
-FILES          := {doc/0.5,src,tests,scripts}
+# FILES          := {Makefile,${NAME},doc/0.5,src,tests,scripts}
+FILES          := {Makefile,src,tests,scripts}
 
 # make test n=1 t="test/*_wh*.py"
-NETWORK        := $(or $(NETWORK),$(network),$(N),$(n))
-TESTS_TO_RUN   := $(or $(TEST),$(test),${T},${t},tests)
+NETWORK        := $(or $(NETWORK), $(network), $(N), $(n))
+TESTS_TO_RUN   := $(or $(TEST), $(test), ${T}, ${t}, tests)
 PYTEST_FLAGS   := 
 
-FLATTEN_ARGS := $(or $(FLATTEN_ARGS),$(flatten_args),$(f))
+FLATTEN_ARGS   := $(or $(FLATTEN_ARGS), $(flatten_args), $(f))
+SINGLE_ARGS    := $(or $(SINGLE_ARGS), $(single_args), $(s))
 SRC_DIRS       := src tests scripts
 DOWNLOAD_DIRS  := generated out
 ERRORS         := /dn/errors.txt
@@ -32,16 +34,24 @@ mtest: clear-errors
 	err -a scripts/run-tests --module pyonetrue --tmp-packages
 
 flatten:
-	name=${PROJECT} && err PYTHONPATH=$$(pwd)/src scripts/${name} ${name} --output=flat/${name} $(FLATTEN_ARGS)
+	mkdir -p flat
+	rm -f ${PROJECT}
+	name=${PROJECT} && \
+      PYTHONPATH=$$(pwd)/src scripts/$${name} $${name} --no-cli --output=flat/$${name}.py $(FLATTEN_ARGS)
+	touch ${PROJECT} && chmod 0444 ${PROJECT}
 
-order: flatten
-	err PYTHONPATH=src python -m cleanedit.pyonetrue --trace flat/cleanedit.unordered.py -o flat/cleanedit.py
+single:
+	@ set -x && \
+      name=${PROJECT} && \
+      output=scripts/$${name} && \
+      PYTHONPATH=$$(pwd)/src python3 -m $${name} $${name} --output=$${output} $(SINGLE_ARGS) && \
+      chmod 0755 $${output}
 
 cx clear-errors:
 	rm -f $(ERRORS)
 
 clean:
-	@ echo "Cleaning up..."
+	@ echo "Cleaning up ..."
 	yes | clean
 	rm -f env.json vars.json $(ERRORS) .errors.*
 	rm -rf build dist ${DOWNLOAD_DIRS}
@@ -51,7 +61,7 @@ clean:
 	find . -name '*.egg-info'          | xargs rm -rf
 
 dist-clean: clean
-	@ echo "Cleaning up..."
+	@ echo "Dist Cleaning up..."
 	rm -rf build dist
 
 layout:
@@ -65,6 +75,7 @@ check:
 
 tar: clean
 	@ ( name=${PROJECT} && cd .. && tar cvfJ /dn/$${name}.tar.xz --exclude="*/__pycache__" $${name}/${FILES} )
+	@ ( name=${PROJECT} && tar tf /dn/$${name}.tar.xz > /dn/$${name}.tar.xz.list )
 
 # refresh content w/o bootstrap
 tar-in:
