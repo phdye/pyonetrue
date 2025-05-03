@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name='pyonetrue',
-    version='0.5.0',
-    author='Your Name',
-    author_email='you@example.com',
-    description='Flatten Python packages into single modules, preserving order and drivers',
+    version='0.5.3',
+    author='Philip Dye',
+    author_email='phdye@acm.org',
+    description='Flatten Python packages into single modules, preserving order and CLI',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/yourusername/pyonetrue',
+    url='https://github.com/phdye/pyonetrue',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     entry_points={
