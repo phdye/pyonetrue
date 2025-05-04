@@ -1,25 +1,32 @@
 import sys
 from pathlib import Path
-from .extract_ast import extract_spans, Span
-from typing import Optional, List, Union
 import importlib.util
+from dataclasses import dataclass, field
+from typing import Optional, List, Union
 
+from .extract_ast import extract_spans, Span
 from .normalize_imports import normalize_imports
 
 DEBUG = False
 
+@dataclass
 class FlatteningContext:
 
-    __slots__ = ("package_path", "package_name", "type", "module_spans", "guard_sources", "main_py")
+    package_path       : Union[Path, str]
+    package_name       : str                           = field(init=False)
+    type               : str                           = field(init=False)
+    main_py            : tuple[str, list[Span]]        = field(init=False)
+    module_spans       : list[tuple[str, list[Span]]]  = field(init=False)
+    guard_sources      : dict[str, list[Span]]         = field(init=False)
 
-    def __init__(self, package_path: str):
-        if not package_path:
+    def __post_init__(self):
+        if not self.package_path:
             raise ValueError("package 'package_path' cannot be empty (None, '', etc.)")
-        self.module_spans = []  # list of (module, [Span])
-        self.guard_sources: dict[str, list[Span]] = {}
-        self.main_py : str = (None, [])
+        self.module_spans = []
+        self.guard_sources = {}
+        self.main_py = (None, [])
         # Resolve package_path to file, dir, or package name
-        path = Path(package_path)
+        path = Path(self.package_path)
         if DEBUG: print(f"DEBUG: Resolved path = {path}", file=sys.stderr)
         if path.exists():
             if path.is_dir():
@@ -29,16 +36,16 @@ class FlatteningContext:
                 self.type = "file"
                 self.package_name = path.stem
             else:
-                raise ValueError(f"input path '{package_path}' exists but is neither a file nor a directory")
+                raise ValueError(f"input path '{self.package_path}' exists but is neither a file nor a directory")
         else:
             if DEBUG: print("DEBUG: package_path not   found as file/dir, trying as package name", file=sys.stderr)
-            spec = importlib.util.find_spec(package_path)
+            spec = importlib.util.find_spec(self.package_path)
             if spec and spec.submodule_search_locations:
                 path = Path(spec.submodule_search_locations[0])
                 self.package_name = path.name
                 self.type = "name"
             else:
-                raise ValueError(f"Cannot infer project package name from {package_path!r}")
+                raise ValueError(f"Cannot infer project package name from {self.package_path!r}")
 
         self.package_path = path
 
