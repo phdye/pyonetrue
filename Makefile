@@ -1,7 +1,7 @@
 NAME           := pyonetrue
 PROJECT        := $${PWD\#\#*/}
 # FILES          := {Makefile,${NAME},doc/0.5,src,tests,scripts}
-FILES          := {Makefile,*.*,doc,src,tests,scripts}
+FILES          := {Makefile,LICENSE,*.*,doc,src,tests,scripts}
 
 # make test n=1 t="test/*_wh*.py"
 NETWORK        := $(or $(NETWORK), $(network), $(N), $(n))
@@ -37,7 +37,7 @@ flatten:
 	mkdir -p flat
 	rm -f ${PROJECT}
 	name=${PROJECT} && \
-      PYTHONPATH=$$(pwd)/src scripts/runner $${name} --no-cli --output=flat/$${name}.py $(FLATTEN_ARGS)
+      PYTHONPATH=$$(pwd)/src scripts/runner $${name} --output=flat/$${name}.py $(FLATTEN_ARGS)
 	touch ${PROJECT} && chmod 0444 ${PROJECT}
 
 single:

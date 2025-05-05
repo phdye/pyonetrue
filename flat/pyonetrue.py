@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-import astfrom collections import defaultdictfrom dataclasses import dataclass, fieldimport importlib.utilfrom pathlib import Pathimport reimport sysfrom typing import List, Optional, Tuple, Union
+import ast
+from collections import defaultdict
+from dataclasses import dataclass, field
+import importlib.util
+from pathlib import Path
+import re
+import sys
+from typing import List, Optional, Tuple, Union
+
 __all__ = [
 # cli
     "__version__",
@@ -20,7 +28,7 @@ __all__ = [
     "ImportEntry",
 ]
 
-r"""
+USAGE=r"""
 Usage:
   pyonetrue [options] <input>
   pyonetrue (-h | --help)
@@ -83,7 +91,7 @@ __version__ = "0.5.4"
 def main(argv=sys.argv):
     """Main function to run the CLI tool."""
 
-    args = docopt(__doc__, argv=argv[1:], version=__version__)
+    args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
         raise ValueError("Invalid options: cannot specify both --no-cli and --main-from")
 
@@ -609,11 +617,11 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
             plain_entries = [e for e in entries if e.is_plain_import]
             from_entries  = [e for e in entries if not e.is_plain_import]
             if plain_entries:
-                lines = format_plain_import(plain_entries)
-                output_spans.extend([Span(kind="import", text=line) for line in sorted(lines)])
+                text = "\n".join(format_plain_import(plain_entries)) + '\n'
+                output_spans.append(Span(kind="import", text=text))
             if from_entries:
-                lines = format_from_import(from_entries)
-                output_spans.extend([Span(kind="import", text=line) for line in sorted(lines)])
+                text = "\n".join(format_from_import(from_entries)) + '\n'
+                output_spans.append(Span(kind="import", text=text))
         output_spans.append(Span(kind="blank", text="\n"))
 
     return output_spans, imported_names

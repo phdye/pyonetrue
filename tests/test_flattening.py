@@ -381,3 +381,14 @@ def test_non_utf8_file_handling(tmp_path):
     ctx = FlatteningContext(package_path=pkg)
     with pytest.raises(UnicodeDecodeError):
         ctx.add_module(path)
+
+def test_deduplicate_imports(tmp_path):
+    pkg = tmp_path / "pkg"
+    write(pkg, "__init__.py", "import sys")
+    write(pkg, "a.py", "import sys")
+    write(pkg, "b.py", "import sys")
+    ctx = FlatteningContext(package_path=pkg)
+    ctx.discover_modules()
+    text = "\n".join(span.text for span in ctx.get_final_output_spans())
+    assert text.count("import sys") == 1, "Duplicate imports not deduplicated"
+

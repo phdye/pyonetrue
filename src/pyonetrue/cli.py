@@ -1,4 +1,4 @@
-r"""
+USAGE=r"""
 Usage:
   pyonetrue [options] <input>
   pyonetrue (-h | --help)
@@ -67,7 +67,7 @@ __version__ = "0.5.4"
 def main(argv=sys.argv):
     """Main function to run the CLI tool."""
 
-    args = docopt(__doc__, argv=argv[1:], version=__version__)
+    args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
         raise ValueError("Invalid options: cannot specify both --no-cli and --main-from")
 

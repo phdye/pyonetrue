@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='pyonetrue',
-    version='0.5.3',
+    version='0.5.4',
     author='Philip Dye',
     author_email='phdye@acm.org',
     description='Flatten Python packages into single modules, preserving order and CLI',
@@ -18,7 +18,6 @@ setup(
     },
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
     python_requires='>=3.8',
