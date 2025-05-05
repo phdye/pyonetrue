@@ -35,17 +35,21 @@ Default behavior is to :
   or --main-from options.
 * Write the output to stdout, but this can be changed with the --output
 * Name clashes, duplicate top-level names, are not allowed by default.
+* If `__main__.py` is being included, prepend shebang.
 
 Options:
-  --output <file>      Write output to file (default: stdout).
-  --no-cli             Do not include package's __main__.py.
-  --main-from <mod>    Include __main__.py from the specified sub-package.
-                       Only one __main__.py module is allowed.
-                       Overrides --no-cli.
-  --all-guards         Include all __main__ guards. (default: discard)
-  --guards-from <mod>  Include __main__ guards only from <mod>.
-  --exclude <exclude>  Exclude specified packages or modules, comma separated.
-  --include <include>  Exclude specified packages or modules, comma separated.
-  --ignore-clashes     Allow duplicate top-level names without error.
-  -h, --help           Show this help message.
-  --version            Show version.
+  -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: "#!/usr/bin/env python3"]
+  -o, --output <file>      Write output to file (default: stdout).
+  --no-cli                 Do not include package's __main__.py.
+  -m, --main-from <mod>    Include __main__.py from the specified sub-package.
+                           Only one __main__.py module is allowed.
+                           Incompatible with --no-cli.
+  -a, --all-guards         Include all __main__ guards. (default: discard)
+  -g, --guards-from <mod>  Include __main__ guards only from <mod>.
+  -e, --exclude <exclude>  Exclude specified packages or modules, comma separated.
+  -i, --include <include>  Exclude specified packages or modules, comma separated.
+  --ignore-clashes         Allow duplicate top-level names without error.
+  -h, --help               Show this help message.
+  --version                Show version.
+  --show-cli-args          Show the command line arguments that would be passed to the
+                           CLI and exit.  This is useful for debugging.

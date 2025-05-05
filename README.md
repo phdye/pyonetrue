@@ -102,6 +102,8 @@ The flattened output is ordered as follows:
 * ❌ Does not interpret or run modules—it is **source-only**
 * ❌ Does not build wheels or packages—flattening only
 
+See also [`doc/Bundling-Challenges.md`](./doc/Bundling-Challenges.md)
+
 ---
 
 ## 🧰 Integration
@@ -117,9 +119,10 @@ This tool is used internally by:
 
 For implementation architecture and future roadmap, see:
 
-* [`Design.md`](./Design.md)
+* [`doc/Design.md`](./doc/Design.md)
 * [`doc/Developer-Guide.md`](./doc/Developer-Guide.md)
 * [`doc/User-Guide.md`](./doc/User-Guide.md)
+* [`doc/Bundling-Challenges.md`](./doc/Bundling-Challenges.md)
 
 ---
 

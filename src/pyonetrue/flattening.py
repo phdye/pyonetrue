@@ -13,27 +13,36 @@ DEBUG = False
 class FlatteningContext:
 
     package_path       : Union[Path, str]
-    package_name       : str                           = field(init=False)
-    type               : str                           = field(init=False)
-    main_py            : tuple[str, list[Span]]        = field(init=False)
-    module_spans       : list[tuple[str, list[Span]]]  = field(init=False)
-    guard_sources      : dict[str, list[Span]]         = field(init=False)
+    package_name       : str                           = ""
+    main_py            : tuple[str, list[Span]]        = (None, [])
+    module_spans       : list[tuple[str, list[Span]]]  = field(default_factory=list)
+    guard_sources      : dict[str, list[Span]]         = field(default_factory=dict)
+
+    # Discovery -- inclusion/exclusion
+    no_cli             : bool                          = False
+    main_from          : list[str]                     = field(default_factory=list)
+    exclude            : list[str]                     = field(default_factory=list)
+    include            : list[str]                     = field(default_factory=list)
+
+    # Conflict detection
+    ignore_clashes     : bool                          = False
+
+    # Output generation
+    output             : str                           = "stdout"
+    shebang            : str                           = "#!/usr/bin/env python3"
+    guards_all         : bool                          = False
+    guards_from        : list[str]                     = field(default_factory=list)
 
     def __post_init__(self):
         if not self.package_path:
             raise ValueError("package 'package_path' cannot be empty (None, '', etc.)")
-        self.module_spans = []
-        self.guard_sources = {}
-        self.main_py = (None, [])
         # Resolve package_path to file, dir, or package name
         path = Path(self.package_path)
         if DEBUG: print(f"DEBUG: Resolved path = {path}", file=sys.stderr)
         if path.exists():
             if path.is_dir():
-                self.type = "dir"
                 self.package_name = path.name
             elif path.is_file():
-                self.type = "file"
                 self.package_name = path.stem
             else:
                 raise ValueError(f"input path '{self.package_path}' exists but is neither a file nor a directory")
@@ -43,7 +52,6 @@ class FlatteningContext:
             if spec and spec.submodule_search_locations:
                 path = Path(spec.submodule_search_locations[0])
                 self.package_name = path.name
-                self.type = "name"
             else:
                 raise ValueError(f"Cannot infer project package name from {self.package_path!r}")
 
@@ -52,9 +60,31 @@ class FlatteningContext:
         if DEBUG: print(f"DEBUG: package_path = {self.package_path}", file=sys.stderr)
         if DEBUG: print(f"DEBUG: package_name = {self.package_name}", file=sys.stderr)
 
+        # Normalize excludes/includes lists to fully-qualified names (if provided)
+        if self.exclude:
+            if isinstance(self.exclude, str):
+                self.exclude = self.exclude.split(",")
+            self.exclude = normalize_module_names(self.package_name, self.exclude)
+            if self.include:
+                if isinstance(self.include, str):
+                    self.include = self.include.split(",")
+                self.include = normalize_module_names(self.package_name, self.include)
+            else:
+                self.include = []
+            if DEBUG: print(f"DEBUG: exclude = {self.exclude}", file=sys.stderr)
+            if DEBUG: print(f"DEBUG: include = {self.include}", file=sys.stderr)
+        elif self.include:
+            raise ValueError("Cannot specify `include` without `exclude`")
+
+        # Normalize self.guards_from to fully-qualified names
+        if self.guards_from:
+            if isinstance(self.guards_from, str):
+                self.guards_from = self.guards_from.split(",")
+            self.guards_from = [ normalize_a_module_name(mod, self.package_name) 
+                                 for mod in self.guards_from ]
+
     def new_module(self, path: Path) -> "FlatteningModule":
         return FlatteningModule(self, path)
-
 
     def add_module(self, obj: Union[str, Path, "FlatteningModule"]) -> None:
         if not obj:
@@ -71,24 +101,16 @@ class FlatteningContext:
         spans = extract_spans(fm.path)
         if DEBUG: print("DEBUG add_module : spans :\n"+"\n".join(span.text for span in spans), file=sys.stderr)
         self.module_spans.append((fm.module, spans))
+
         for span in spans:
             if span.kind == 'main_guard':
                 self.guard_sources.setdefault(fm.module, []).append(span)
+
         if fm.module.endswith("__main__"):
             self.main_py = (fm.module, spans)
             if DEBUG: print("DEBUG add_module : main spans :\n"+"\n".join(span.text for span in spans), file=sys.stderr)
 
-    def discover_modules(self, includes=None, excludes=None, *, no_cli=False, main_from=None) -> None:
-
-        # Normalize excludes/includes lists (if provided)
-        if excludes:
-            excludes = normalize_module_names(self.package_name, excludes)
-            if includes:
-                includes = normalize_module_names(self.package_name, includes)
-            else:
-                includes = []
-        else:
-            excludes = includes = []
+    def discover_modules(self) -> None:
 
         if self.package_path.is_file():
             self.add_module(self.package_path)
@@ -96,21 +118,17 @@ class FlatteningContext:
 
         path = Path(self.package_path)
 
-        if self.package_path.is_file():
-            self.add_module(self.package_path)
-            return
-
-        if DEBUG: print(f"\nDEBUG: Discovering modules in {self.package_path = }", file=sys.stderr)
-
         if path.is_file():
             self.add_module(path)
             return
 
+        if DEBUG: print(f"\nDEBUG: Discovering modules in {self.package_path = }", file=sys.stderr)
+
         # Determine exactly which __main__.py (if any) we are allowed to accept
-        if no_cli:
+        if self.no_cli:
             allowed_main = None
-        elif main_from:
-            allowed_main = normalize_a_module_name(main_from, self.package_name)
+        elif self.main_from:
+            allowed_main = normalize_a_module_name(self.main_from, self.package_name)
             if not allowed_main.endswith(".__main__"):
                 allowed_main = allowed_main + ".__main__"
         else:
@@ -126,8 +144,8 @@ class FlatteningContext:
 
             full_mod = normalize_a_module_name(dotted, self.package_name)
 
-            if dotted_member_of(full_mod, excludes):
-                if not dotted_member_of(full_mod, includes):
+            if self.exclude and dotted_member_of(full_mod, self.exclude):
+                if not (self.include and dotted_member_of(full_mod, self.include)):
                     if DEBUG: print(f"DEBUG: Discover - excluded - skipping module {full_mod = }, from {subpath = }", file=sys.stderr)
                     continue
 
@@ -142,77 +160,79 @@ class FlatteningContext:
 
             self.add_module(subpath)
 
-    def get_final_output_spans(
-        self,
-        *,
-        include_all_guards: bool = False,
-        include_guards: Optional[List[str]] = None,
-        main_from: Optional[str] = None,
-        no_cli: bool = False,
-        ignore_clashes: bool = False,
-    ) -> list[Span]:
-        (main_module, main_spans) = self.main_py
-        # 3) Now walk only the non-__main__ modules
-        import_spans: list[Span] = [s for s in main_spans if s.kind == "import"]
-        guard_spans: list[Span] = []
-        other_spans: list[Span] = []
-
-        # If you still need to normalize include_guards to fully-qualified names, do it here
-        if include_guards:
-            include_guards = [ normalize_a_module_name(mod, self.package_name) 
-                              for mod in include_guards ]
-
-        # Identify the retained __all__ span (if any), only from the root module
+    def gather_root_spans(self):
         retained_all = None
-        for module, spans in self.module_spans:
-            if module == self.package_name:
-                for i, span in enumerate(spans):
-                    if span.kind == "logic" and span.text.strip().startswith("__all__"):
-                        retained_all = span
-                        break
+        retained_imports = []
+        retained_logic = []
 
-        for module, spans in self.module_spans:
-            # skip every __main__.py except the one we chose
-            if module == main_module:
+        for mod, spans in self.module_spans:
+            if mod == self.package_name:
+                for s in spans:
+                    if s.kind == "__all__":
+                        retained_all = s
+                    elif s.kind == "import":
+                        retained_imports.append(s)
+                    elif s.kind == "main_guard":
+                        pass
+                    else:
+                        retained_logic.append(s)
+        return retained_all, retained_imports, retained_logic
+
+    def gather_module_spans(self):
+        non_root_spans = []
+
+        for mod, spans in self.module_spans:
+            if mod == self.package_name:
                 continue
+            for s in spans:
+                if s.kind != "main_guard":
+                    non_root_spans.append(s)
 
-            for span in spans:
-                if span.kind == "import":
-                    import_spans.append(span)
-                elif span.kind == "main_guard":
-                    if include_all_guards or (include_guards and module in include_guards):
-                        guard_spans.append(span)
-                elif span.kind == "logic" and span.text.strip().startswith("__all__"):
-                    continue
-                else:
-                    other_spans.append(span)
+        return non_root_spans
 
-        # 4) Normalize imports once, then assemble final output
-        import_spans, import_symbols = normalize_imports(
+    def gather_main_guard_spans(self):
+        result = []
+        if self.guards_all:
+            for spans in self.guard_sources.values():
+                result.extend(spans)
+        elif self.guards_from:
+            for mod in self.guards_from:
+                if mod in self.guard_sources:
+                    result.extend(self.guard_sources[mod])
+        return result
+
+    def get_main_spans(self):
+        main_mod, main_spans = self.main_py
+        return main_spans if (main_mod and main_spans and not self.no_cli) else []
+
+    def normalize_and_assemble(self, imports, all_decl, logic, guards, main):
+        # Normalize imports
+        imports, import_symbols = normalize_imports(
             package_name=self.package_name,
-            import_spans=import_spans )
+            import_spans=imports,
+        )
 
-        simple: list[Span] = [retained_all] if retained_all else []
-        simple.extend(other_spans)
-        simple.extend(guard_spans)
+        ordered = list(imports)
 
         blank_line = Span(kind="blank", text="\n")
-        body: list[Span] = []
-        for span in simple:
-            body.extend([span, blank_line])
 
-        output: list[Span] = list(import_spans)
-        output.extend(body)
+        if all_decl:
+            ordered.append(blank_line)
+            ordered.append(all_decl)
+            ordered.append(blank_line)
 
-        # 5) Finally, append the __main__.py body
-        #    (but strip out any import spans since those have already been
-        #     processed by normalize_imports)
-        output.extend([s for s in main_spans if s.kind != "import"])
+        for s in logic + guards:
+            ordered.append(s)
+            ordered.append(blank_line)
 
-        # 6) Clash‐detection as before
-        if not ignore_clashes:
+        ordered.extend(main)
+
+        return ordered, import_symbols
+
+    def check_clashes(self, spans, import_symbols):
+        if not self.ignore_clashes:
             seen = set(import_symbols)
-            for span in output:
+            for span in spans:
                 if span.kind in ("function", "class"):
                     header = span.text.lstrip()
                     if header.startswith("def "):
@@ -225,8 +245,21 @@ class FlatteningContext:
                         raise Exception(f"Duplicate top-level name detected: {name}")
                     seen.add(name)
 
-        return output
+    def get_final_output_spans(self):
+        all_decl, root_imports, root_logic = self.gather_root_spans()
+        module_spans = self.gather_module_spans()
+        main_guards = self.gather_main_guard_spans()
+        main_body = self.get_main_spans()
 
+        imports = root_imports + [s for s in module_spans if s.kind == "import"]
+        logic = root_logic + [s for s in module_spans if s.kind not in["import", "main_guard"]]
+
+        spans, import_symbols = self.normalize_and_assemble(
+            imports, all_decl, logic, main_guards, main_body
+        )
+
+        self.check_clashes(spans, import_symbols)
+        return spans
 
 class FlatteningModule:
 

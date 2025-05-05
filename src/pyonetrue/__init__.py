@@ -15,15 +15,6 @@ from .normalize_imports import (
     ImportEntry,
 )
 
-from .package import (
-    build_flattening_context,
-    populate_flattening_context,
-    generate_flattened_spans,
-    write_flattened_output,
-    run_cli_logic,
-    CliOptions,
-)
-
 from .cli import __version__, main
 
 __all__ = [
@@ -44,11 +35,4 @@ __all__ = [
     "set_line_length",
     "get_line_length",
     "ImportEntry",
-# package
-    "build_flattening_context",
-    "populate_flattening_context",
-    "generate_flattened_spans",
-    "write_flattened_output",
-    "run_cli_logic",
-    "CliOptions",
 ]

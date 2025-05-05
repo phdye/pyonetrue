@@ -1,4 +1,5 @@
 import sys
 from .cli import main
 
-exit(main(sys.argv))
+if __name__ == "__main__":
+    exit(main(sys.argv))

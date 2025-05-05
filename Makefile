@@ -6,10 +6,10 @@ FILES          := {Makefile,*.*,doc,src,tests,scripts}
 # make test n=1 t="test/*_wh*.py"
 NETWORK        := $(or $(NETWORK), $(network), $(N), $(n))
 TESTS_TO_RUN   := $(or $(TEST), $(test), ${T}, ${t}, tests)
-PYTEST_FLAGS   := 
+PYTEST_FLAGS   := $(or $(PYTEST_FLAGS), $(FLAGS), $(flags), ${F}, ${f})
 
-FLATTEN_ARGS   := $(or $(FLATTEN_ARGS), $(flatten_args), $(f))
-SINGLE_ARGS    := $(or $(SINGLE_ARGS), $(single_args), $(s))
+FLATTEN_ARGS   := $(or $(FLATTEN_ARGS), $(flatten_args), $(flatten), $(flat))
+SINGLE_ARGS    := $(or $(SINGLE_ARGS), $(single_args), $(single), $(sing))
 SRC_DIRS       := src tests scripts
 DOWNLOAD_DIRS  := generated out
 ERRORS         := /dn/errors.txt
@@ -24,7 +24,7 @@ ISORT          := isort
 all: clear-errors check test
 
 ifeq ($(NETWORK),1)
-  PYTEST_FLAGS += --run-network
+    PYTEST_FLAGS += --run-network
 endif
 
 test: clear-errors
@@ -37,7 +37,7 @@ flatten:
 	mkdir -p flat
 	rm -f ${PROJECT}
 	name=${PROJECT} && \
-      PYTHONPATH=$$(pwd)/src scripts/$${name} $${name} --no-cli --output=flat/$${name}.py $(FLATTEN_ARGS)
+      PYTHONPATH=$$(pwd)/src scripts/runner $${name} --no-cli --output=flat/$${name}.py $(FLATTEN_ARGS)
 	touch ${PROJECT} && chmod 0444 ${PROJECT}
 
 single:

@@ -1,13 +1,5 @@
-import ast
-from collections import defaultdict
-from dataclasses import dataclass
-import importlib.util
-from pathlib import Path
-import re
-import sys
-from typing import List, Optional, Tuple, Union
-
-
+#!/usr/bin/env python3
+import astfrom collections import defaultdictfrom dataclasses import dataclass, fieldimport importlib.utilfrom pathlib import Pathimport reimport sysfrom typing import List, Optional, Tuple, Union
 __all__ = [
 # cli
     "__version__",
@@ -26,18 +18,9 @@ __all__ = [
     "set_line_length",
     "get_line_length",
     "ImportEntry",
-# package
-    "build_flattening_context",
-    "populate_flattening_context",
-    "generate_flattened_spans",
-    "write_flattened_output",
-    "run_cli_logic",
-    "CliOptions",
 ]
 
-
-
-USAGE = r"""
+r"""
 Usage:
   pyonetrue [options] <input>
   pyonetrue (-h | --help)
@@ -70,37 +53,41 @@ one of them instead, you can use the --main-from option to specify the
 sub-package from which to include __main__.py.
 
 Default behavior is to :
+* All relative imports are eliminated. Flattened output is fully self-contained.
 * Main guards are discarded, but this can be changed with the --main-all
   or --main-from options.
 * Write the output to stdout, but this can be changed with the --output
 * Name clashes, duplicate top-level names, are not allowed by default.
+* If `__main__.py` is being included, prepend shebang.
 
 Options:
-  --output <file>      Write output to file (default: stdout).
-  --no-cli             Do not include CLI code, __main__.py.
-  --main-from <mod>    Include __main__.py from the specified sub-package.
-                       Only one __main__.py module is allowed.
-                       Overrides --no-cli.
-  --all-guards         Include all __main__ guards. (default: discard)
-  --guards-from <mod>  Include __main__ guards only from <mod>.
-  --exclude <exclude>  Exclude specified packages or modules, comma separated.
-  --include <include>  Exclude specified packages or modules, comma separated.
-  --ignore-clashes     Allow duplicate top-level names without error.
-  -h, --help           Show this help message.
-  --version            Show version.
+  -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
+  -o, --output <file>      Write output to file (default: stdout).
+  --no-cli                 Do not include package's __main__.py.
+  -m, --main-from <mod>    Include __main__.py from the specified sub-package.
+                           Only one __main__.py module is allowed.
+                           Incompatible with --no-cli.
+  -a, --all-guards         Include all __main__ guards. (default: discard)
+  -g, --guards-from <mod>  Include __main__ guards only from <mod>.
+  -e, --exclude <exclude>  Exclude specified packages or modules, comma separated.
+  -i, --include <include>  Exclude specified packages or modules, comma separated.
+  --ignore-clashes         Allow duplicate top-level names without error.
+  -h, --help               Show this help message.
+  --version                Show version.
+  --show-cli-args          Show the command line arguments that would be passed to the
+                           CLI and exit.  This is useful for debugging.
 """
 
-
-
-__version__ = "0.5"
-
-
+__version__ = "0.5.4"
 
 def main(argv=sys.argv):
-    args = docopt(USAGE, argv=argv[1:], version=__version__)
+    """Main function to run the CLI tool."""
+
+    args = docopt(__doc__, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
         raise ValueError("Invalid options: cannot specify both --no-cli and --main-from")
-    opt = CliOptions(
+
+    ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
         no_cli=bool(args.get('--no-cli')),
@@ -110,17 +97,34 @@ def main(argv=sys.argv):
         ignore_clashes=bool(args.get('--ignore-clashes')),
         exclude=args.get('--exclude', '').split(',') if args.get('--exclude') else [],
         include=args.get('--include', '').split(',') if args.get('--include') else [],
+        shebang=args.get('--shebang', '#!/usr/bin/env python3'),
     )
-    if len(opt.main_from) > 1:
-        raise ValueError("Only one --main-from option is allowed.")
-    opt.main_from = opt.main_from[0] if opt.main_from else None
-    if opt.main_from:
-        opt.no_cli = False
-    elif not opt.no_cli:
-        opt.main_from = '__main__' # primary package
-    return run_cli_logic(opt)
 
+    ctx.main_from = ctx.main_from[0] if ctx.main_from else None
+    if ctx.main_from:
+        ctx.no_cli = False
+    elif not ctx.no_cli:
+        ctx.main_from = '__main__' # primary package
+    if args['--show-cli-args']:
+        print(f"CLI args:\n{ctx}")
+        return 0
 
+    ctx.discover_modules()
+    ctx.gather_main_guard_spans()
+    spans = ctx.get_final_output_spans()
+
+    lines = []
+    if ctx.shebang:
+        lines.append(ctx.shebang.rstrip("\n") + "\n")
+    lines.extend(span.text for span in spans)
+    text = "".join(lines)
+
+    if ctx.output == "stdout":
+        sys.stdout.write(text)
+    else:
+        Path(ctx.output).write_text(text)
+
+    return 0
 
 class Span:
     """
@@ -132,8 +136,6 @@ class Span:
 
     def __repr__(self):
         return f"Span(kind={self.kind!r}, text={self.text!r})"
-
-
 
 def extract_spans(source: Union[str, Path], filename: str = '<unknown>') -> List[Span]:
     """
@@ -192,52 +194,84 @@ def extract_spans(source: Union[str, Path], filename: str = '<unknown>') -> List
 
     return spans
 
-
-
 DEBUG = False
 
-
-
+@dataclass
 class FlatteningContext:
 
-    __slots__ = ("package_path", "package_name", "type", "module_spans", "guard_sources", "main_py")
+    package_path       : Union[Path, str]
+    package_name       : str                           = ""
+    main_py            : tuple[str, list[Span]]        = (None, [])
+    module_spans       : list[tuple[str, list[Span]]]  = field(default_factory=list)
+    guard_sources      : dict[str, list[Span]]         = field(default_factory=dict)
 
-    def __init__(self, package_path: str):
-        if not package_path:
+    # Discovery -- inclusion/exclusion
+    no_cli             : bool                          = False
+    main_from          : list[str]                     = field(default_factory=list)
+    exclude            : list[str]                     = field(default_factory=list)
+    include            : list[str]                     = field(default_factory=list)
+
+    # Conflict detection
+    ignore_clashes     : bool                          = False
+
+    # Output generation
+    output             : str                           = "stdout"
+    shebang            : str                           = "#!/usr/bin/env python3"
+    guards_all         : bool                          = False
+    guards_from        : list[str]                     = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.package_path:
             raise ValueError("package 'package_path' cannot be empty (None, '', etc.)")
-        self.module_spans = []  # list of (module, [Span])
-        self.guard_sources: dict[str, list[Span]] = {}
-        self.main_py : str = (None, [])
         # Resolve package_path to file, dir, or package name
-        path = Path(package_path)
+        path = Path(self.package_path)
         if DEBUG: print(f"DEBUG: Resolved path = {path}", file=sys.stderr)
         if path.exists():
             if path.is_dir():
-                self.type = "dir"
                 self.package_name = path.name
             elif path.is_file():
-                self.type = "file"
                 self.package_name = path.stem
             else:
-                raise ValueError(f"input path '{package_path}' exists but is neither a file nor a directory")
+                raise ValueError(f"input path '{self.package_path}' exists but is neither a file nor a directory")
         else:
             if DEBUG: print("DEBUG: package_path not   found as file/dir, trying as package name", file=sys.stderr)
-            spec = importlib.util.find_spec(package_path)
+            spec = importlib.util.find_spec(self.package_path)
             if spec and spec.submodule_search_locations:
                 path = Path(spec.submodule_search_locations[0])
                 self.package_name = path.name
-                self.type = "name"
             else:
-                raise ValueError(f"Cannot infer project package name from {package_path!r}")
+                raise ValueError(f"Cannot infer project package name from {self.package_path!r}")
 
         self.package_path = path
 
         if DEBUG: print(f"DEBUG: package_path = {self.package_path}", file=sys.stderr)
         if DEBUG: print(f"DEBUG: package_name = {self.package_name}", file=sys.stderr)
 
+        # Normalize excludes/includes lists to fully-qualified names (if provided)
+        if self.exclude:
+            if isinstance(self.exclude, str):
+                self.exclude = self.exclude.split(",")
+            self.exclude = normalize_module_names(self.package_name, self.exclude)
+            if self.include:
+                if isinstance(self.include, str):
+                    self.include = self.include.split(",")
+                self.include = normalize_module_names(self.package_name, self.include)
+            else:
+                self.include = []
+            if DEBUG: print(f"DEBUG: exclude = {self.exclude}", file=sys.stderr)
+            if DEBUG: print(f"DEBUG: include = {self.include}", file=sys.stderr)
+        elif self.include:
+            raise ValueError("Cannot specify `include` without `exclude`")
+
+        # Normalize self.guards_from to fully-qualified names
+        if self.guards_from:
+            if isinstance(self.guards_from, str):
+                self.guards_from = self.guards_from.split(",")
+            self.guards_from = [ normalize_a_module_name(mod, self.package_name) 
+                                 for mod in self.guards_from ]
+
     def new_module(self, path: Path) -> "FlatteningModule":
         return FlatteningModule(self, path)
-
 
     def add_module(self, obj: Union[str, Path, "FlatteningModule"]) -> None:
         if not obj:
@@ -254,24 +288,16 @@ class FlatteningContext:
         spans = extract_spans(fm.path)
         if DEBUG: print("DEBUG add_module : spans :\n"+"\n".join(span.text for span in spans), file=sys.stderr)
         self.module_spans.append((fm.module, spans))
+
         for span in spans:
             if span.kind == 'main_guard':
                 self.guard_sources.setdefault(fm.module, []).append(span)
+
         if fm.module.endswith("__main__"):
             self.main_py = (fm.module, spans)
             if DEBUG: print("DEBUG add_module : main spans :\n"+"\n".join(span.text for span in spans), file=sys.stderr)
 
-    def discover_modules(self, includes=None, excludes=None, *, no_cli=False, main_from=None) -> None:
-
-        # Normalize excludes/includes lists (if provided)
-        if excludes:
-            excludes = normalize_module_names(self.package_name, excludes)
-            if includes:
-                includes = normalize_module_names(self.package_name, includes)
-            else:
-                includes = []
-        else:
-            excludes = includes = []
+    def discover_modules(self) -> None:
 
         if self.package_path.is_file():
             self.add_module(self.package_path)
@@ -279,21 +305,17 @@ class FlatteningContext:
 
         path = Path(self.package_path)
 
-        if self.package_path.is_file():
-            self.add_module(self.package_path)
-            return
-
-        if DEBUG: print(f"\nDEBUG: Discovering modules in {self.package_path = }", file=sys.stderr)
-
         if path.is_file():
             self.add_module(path)
             return
 
+        if DEBUG: print(f"\nDEBUG: Discovering modules in {self.package_path = }", file=sys.stderr)
+
         # Determine exactly which __main__.py (if any) we are allowed to accept
-        if no_cli:
+        if self.no_cli:
             allowed_main = None
-        elif main_from:
-            allowed_main = normalize_a_module_name(main_from, self.package_name)
+        elif self.main_from:
+            allowed_main = normalize_a_module_name(self.main_from, self.package_name)
             if not allowed_main.endswith(".__main__"):
                 allowed_main = allowed_main + ".__main__"
         else:
@@ -309,8 +331,8 @@ class FlatteningContext:
 
             full_mod = normalize_a_module_name(dotted, self.package_name)
 
-            if dotted_member_of(full_mod, excludes):
-                if not dotted_member_of(full_mod, includes):
+            if self.exclude and dotted_member_of(full_mod, self.exclude):
+                if not (self.include and dotted_member_of(full_mod, self.include)):
                     if DEBUG: print(f"DEBUG: Discover - excluded - skipping module {full_mod = }, from {subpath = }", file=sys.stderr)
                     continue
 
@@ -325,77 +347,79 @@ class FlatteningContext:
 
             self.add_module(subpath)
 
-    def get_final_output_spans(
-        self,
-        *,
-        include_all_guards: bool = False,
-        include_guards: Optional[List[str]] = None,
-        main_from: Optional[str] = None,
-        no_cli: bool = False,
-        ignore_clashes: bool = False,
-    ) -> list[Span]:
-        (main_module, main_spans) = self.main_py
-        # 3) Now walk only the non-__main__ modules
-        import_spans: list[Span] = [s for s in main_spans if s.kind == "import"]
-        guard_spans: list[Span] = []
-        other_spans: list[Span] = []
-
-        # If you still need to normalize include_guards to fully-qualified names, do it here
-        if include_guards:
-            include_guards = [ normalize_a_module_name(mod, self.package_name) 
-                              for mod in include_guards ]
-
-        # Identify the retained __all__ span (if any), only from the root module
+    def gather_root_spans(self):
         retained_all = None
-        for module, spans in self.module_spans:
-            if module == self.package_name:
-                for i, span in enumerate(spans):
-                    if span.kind == "logic" and span.text.strip().startswith("__all__"):
-                        retained_all = span
-                        break
+        retained_imports = []
+        retained_logic = []
 
-        for module, spans in self.module_spans:
-            # skip every __main__.py except the one we chose
-            if module == main_module:
+        for mod, spans in self.module_spans:
+            if mod == self.package_name:
+                for s in spans:
+                    if s.kind == "__all__":
+                        retained_all = s
+                    elif s.kind == "import":
+                        retained_imports.append(s)
+                    elif s.kind == "main_guard":
+                        pass
+                    else:
+                        retained_logic.append(s)
+        return retained_all, retained_imports, retained_logic
+
+    def gather_module_spans(self):
+        non_root_spans = []
+
+        for mod, spans in self.module_spans:
+            if mod == self.package_name:
                 continue
+            for s in spans:
+                if s.kind != "main_guard":
+                    non_root_spans.append(s)
 
-            for span in spans:
-                if span.kind == "import":
-                    import_spans.append(span)
-                elif span.kind == "main_guard":
-                    if include_all_guards or (include_guards and module in include_guards):
-                        guard_spans.append(span)
-                elif span.kind == "logic" and span.text.strip().startswith("__all__"):
-                    continue
-                else:
-                    other_spans.append(span)
+        return non_root_spans
 
-        # 4) Normalize imports once, then assemble final output
-        import_spans, import_symbols = normalize_imports(
+    def gather_main_guard_spans(self):
+        result = []
+        if self.guards_all:
+            for spans in self.guard_sources.values():
+                result.extend(spans)
+        elif self.guards_from:
+            for mod in self.guards_from:
+                if mod in self.guard_sources:
+                    result.extend(self.guard_sources[mod])
+        return result
+
+    def get_main_spans(self):
+        main_mod, main_spans = self.main_py
+        return main_spans if (main_mod and main_spans and not self.no_cli) else []
+
+    def normalize_and_assemble(self, imports, all_decl, logic, guards, main):
+        # Normalize imports
+        imports, import_symbols = normalize_imports(
             package_name=self.package_name,
-            import_spans=import_spans )
+            import_spans=imports,
+        )
 
-        simple: list[Span] = [retained_all] if retained_all else []
-        simple.extend(other_spans)
-        simple.extend(guard_spans)
+        ordered = list(imports)
 
         blank_line = Span(kind="blank", text="\n")
-        body: list[Span] = []
-        for span in simple:
-            body.extend([span, blank_line])
 
-        output: list[Span] = list(import_spans)
-        output.extend(body)
+        if all_decl:
+            ordered.append(blank_line)
+            ordered.append(all_decl)
+            ordered.append(blank_line)
 
-        # 5) Finally, append the __main__.py body
-        #    (but strip out any import spans since those have already been
-        #     processed by normalize_imports)
-        output.extend([s for s in main_spans if s.kind != "import"])
+        for s in logic + guards:
+            ordered.append(s)
+            ordered.append(blank_line)
 
-        # 6) Clash‐detection as before
-        if not ignore_clashes:
+        ordered.extend(main)
+
+        return ordered, import_symbols
+
+    def check_clashes(self, spans, import_symbols):
+        if not self.ignore_clashes:
             seen = set(import_symbols)
-            for span in output:
+            for span in spans:
                 if span.kind in ("function", "class"):
                     header = span.text.lstrip()
                     if header.startswith("def "):
@@ -408,9 +432,21 @@ class FlatteningContext:
                         raise Exception(f"Duplicate top-level name detected: {name}")
                     seen.add(name)
 
-        return output
+    def get_final_output_spans(self):
+        all_decl, root_imports, root_logic = self.gather_root_spans()
+        module_spans = self.gather_module_spans()
+        main_guards = self.gather_main_guard_spans()
+        main_body = self.get_main_spans()
 
+        imports = root_imports + [s for s in module_spans if s.kind == "import"]
+        logic = root_logic + [s for s in module_spans if s.kind not in["import", "main_guard"]]
 
+        spans, import_symbols = self.normalize_and_assemble(
+            imports, all_decl, logic, main_guards, main_body
+        )
+
+        self.check_clashes(spans, import_symbols)
+        return spans
 
 class FlatteningModule:
 
@@ -435,8 +471,6 @@ class FlatteningModule:
 
         self.path = path
 
-
-
 def dotted_member_of(dotted: str, module_list: list[str]) -> bool:
     if not module_list:
         return False
@@ -445,8 +479,6 @@ def dotted_member_of(dotted: str, module_list: list[str]) -> bool:
             return True
     return False
 
-
-
 def dotted_of_module(module: str, dotted: str) -> bool:
     if dotted == module:
         return True
@@ -454,15 +486,11 @@ def dotted_of_module(module: str, dotted: str) -> bool:
         return True
     return False
 
-
-
 def normalize_a_module_name(mod: str, package_name: str) -> str:
     if mod.startswith(package_name + ".") or mod == package_name:
         return mod
     else:
         return package_name + "." + mod.lstrip('.')
-
-
 
 def normalize_module_names(
     package_name: str,
@@ -473,8 +501,6 @@ def normalize_module_names(
     if not isinstance(module_names, list):
         raise ValueError(f"module_names must be str or list of str, not {type(module_names)}")
     return [normalize_a_module_name(mod, package_name) for mod in module_names]
-
-
 
 try :
     from stdlib_list import stdlib_list
@@ -490,15 +516,9 @@ except ImportError:
     }
     stdlib_list = False
 
-
-
 DEFAULT_LINE_LENGTH = 80
 
-
-
 LINE_LENGTH = DEFAULT_LINE_LENGTH
-
-
 
 @dataclass(order=True)
 class ImportEntry:
@@ -517,11 +537,7 @@ class ImportEntry:
         object.__setattr__(self, 'symbol', self.symbol or '')
         object.__setattr__(self, 'asname', self.asname or '')
 
-
-
 IE = ImportEntry
-
-
 
 def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -> Tuple[List[Span], List[str]]:
     """
@@ -602,8 +618,6 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
 
     return output_spans, imported_names
 
-
-
 def format_plain_import(entries: List[ImportEntry]) -> List[str]:
     if not entries:
         return []
@@ -615,8 +629,6 @@ def format_plain_import(entries: List[ImportEntry]) -> List[str]:
         else:
             imports.add(f"{e.module}")
     return [ "import " + sym_expr for sym_expr in sorted(imports) ]
-
-
 
 def format_from_import(entries: List[ImportEntry]) -> List[str]:
     if not entries:
@@ -636,8 +648,6 @@ def format_from_import(entries: List[ImportEntry]) -> List[str]:
     parts.append(")")
     return parts
 
-
-
 def is_stdlib_module(module, pyver=None):
     """
     Check if a module is part of the standard library.
@@ -652,8 +662,6 @@ def is_stdlib_module(module, pyver=None):
         return module in STDLIB_MODULES
     return module in STDLIB_MODULES
 
-
-
 def set_line_length(length: int):
     """
     Set the line length for formatting imports.
@@ -664,82 +672,11 @@ def set_line_length(length: int):
     else:
         raise ValueError("Line length must be a positive integer.")
 
-
-
 def get_line_length() -> int:
     """
     Get the current line length for formatting imports.
     """
     return LINE_LENGTH
-
-
-
-DEBUG = False
-
-
-
-@dataclass
-class CliOptions:
-    package_path       : Union[str, Path]     # dotted package name, packge root, or module path
-    output             : Union[str, Path]     # output file path or 'stdout'
-    include            : list
-    exclude            : list
-    guards_from        : list
-    guards_all         : bool
-    main_from          : str
-    no_cli             : bool
-    ignore_clashes     : bool
-
-
-
-def build_flattening_context(cli: CliOptions):
-    return FlatteningContext(cli.package_path)
-
-
-
-def populate_flattening_context(ctx : FlatteningContext, cli: CliOptions):
-    ctx.discover_modules(
-        includes=cli.include,
-        excludes=cli.exclude,
-        no_cli=cli.no_cli,
-        main_from=cli.main_from,
-    )
-
-
-
-def generate_flattened_spans(ctx, cli: CliOptions):
-    return ctx.get_final_output_spans(
-        include_all_guards=cli.guards_all,
-        include_guards=cli.guards_from,
-        main_from=cli.main_from,
-        no_cli=cli.no_cli,
-        ignore_clashes=cli.ignore_clashes,
-    )
-
-
-
-def write_flattened_output(spans, output_path: Union[str, Path]):
-    output_path = Path(output_path)
-    text = "\n".join(span.text for span in spans)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(text)
-
-
-
-def run_cli_logic(cli: CliOptions):
-    if cli.no_cli and cli.main_from:
-        raise ValueError("Invalid options: cannot specify both opt.no_cli and opt.main_from")
-    ctx = build_flattening_context(cli)
-    populate_flattening_context(ctx, cli)
-    spans = generate_flattened_spans(ctx, cli)
-    if DEBUG: print("DEBUG run_cli_logic : spans :\n", repr("\n".join(span.text for span in spans)), file=sys.stderr)
-    if str(cli.output) == 'stdout':
-        print("\n".join(span.text for span in spans))
-    else:
-        write_flattened_output(spans, cli.output)
-    return 0
-
-
 
 """Pythonic command-line interface parser that will make you smile.
 
@@ -750,17 +687,13 @@ def run_cli_logic(cli: CliOptions):
 
 """
 
-
+__all__ = ['docopt']
 
 __version__ = '0.6.2'
-
-
 
 class DocoptLanguageError(Exception):
 
     """Error in construction of usage-message by developer."""
-
-
 
 class DocoptExit(SystemExit):
 
@@ -770,8 +703,6 @@ class DocoptExit(SystemExit):
 
     def __init__(self, message=''):
         SystemExit.__init__(self, (message + '\n' + self.usage).strip())
-
-
 
 class Pattern(object):
 
@@ -847,8 +778,6 @@ class Pattern(object):
                 ret.append(children)
         return Either(*[Required(*e) for e in ret])
 
-
-
 class ChildPattern(Pattern):
 
     def __init__(self, name, value=None):
@@ -881,8 +810,6 @@ class ChildPattern(Pattern):
             return True, left_, collected
         return True, left_, collected + [match]
 
-
-
 class ParentPattern(Pattern):
 
     def __init__(self, *children):
@@ -896,8 +823,6 @@ class ParentPattern(Pattern):
         if type(self) in types:
             return [self]
         return sum([c.flat(*types) for c in self.children], [])
-
-
 
 class Argument(ChildPattern):
 
@@ -913,8 +838,6 @@ class Argument(ChildPattern):
         value = re.findall(r'\[default: (.*)\]', source, flags=re.I)
         return class_(name, value[0] if value else None)
 
-
-
 class Command(Argument):
 
     def __init__(self, name, value=False):
@@ -929,8 +852,6 @@ class Command(Argument):
                 else:
                     break
         return None, None
-
-
 
 class Option(ChildPattern):
 
@@ -971,8 +892,6 @@ class Option(ChildPattern):
         return 'Option(%r, %r, %r, %r)' % (self.short, self.long,
                                            self.argcount, self.value)
 
-
-
 class Required(ParentPattern):
 
     def match(self, left, collected=None):
@@ -985,8 +904,6 @@ class Required(ParentPattern):
                 return False, left, collected
         return True, l, c
 
-
-
 class DocoptOptional(ParentPattern):
 
     def match(self, left, collected=None):
@@ -995,13 +912,9 @@ class DocoptOptional(ParentPattern):
             m, left, collected = p.match(left, collected)
         return True, left, collected
 
-
-
 class AnyOptions(DocoptOptional):
 
     """Marker/placeholder for [options] shortcut."""
-
-
 
 class OneOrMore(ParentPattern):
 
@@ -1024,8 +937,6 @@ class OneOrMore(ParentPattern):
             return True, l, c
         return False, left, collected
 
-
-
 class Either(ParentPattern):
 
     def match(self, left, collected=None):
@@ -1039,8 +950,6 @@ class Either(ParentPattern):
             return min(outcomes, key=lambda outcome: len(outcome[1]))
         return False, left, collected
 
-
-
 class TokenStream(list):
 
     def __init__(self, source, error):
@@ -1052,8 +961,6 @@ class TokenStream(list):
 
     def current(self):
         return self[0] if len(self) else None
-
-
 
 def parse_long(tokens, options):
     """long ::= '--' chars [ ( ' ' | '=' ) chars ] ;"""
@@ -1086,8 +993,6 @@ def parse_long(tokens, options):
         if tokens.error is DocoptExit:
             o.value = value if value is not None else True
     return [o]
-
-
 
 def parse_shorts(tokens, options):
     """shorts ::= '-' ( chars )* [ [ ' ' ] chars ] ;"""
@@ -1123,8 +1028,6 @@ def parse_shorts(tokens, options):
         parsed.append(o)
     return parsed
 
-
-
 def parse_pattern(source, options):
     tokens = TokenStream(re.sub(r'([\[\]\(\)\|]|\.\.\.)', r' \1 ', source),
                          DocoptLanguageError)
@@ -1132,8 +1035,6 @@ def parse_pattern(source, options):
     if tokens.current() is not None:
         raise tokens.error('unexpected ending: %r' % ' '.join(tokens))
     return Required(*result)
-
-
 
 def parse_expr(tokens, options):
     """expr ::= seq ( '|' seq )* ;"""
@@ -1147,8 +1048,6 @@ def parse_expr(tokens, options):
         result += [Required(*seq)] if len(seq) > 1 else seq
     return [Either(*result)] if len(result) > 1 else result
 
-
-
 def parse_seq(tokens, options):
     """seq ::= ( atom [ '...' ] )* ;"""
     result = []
@@ -1159,8 +1058,6 @@ def parse_seq(tokens, options):
             tokens.move()
         result += atom
     return result
-
-
 
 def parse_atom(tokens, options):
     """atom ::= '(' expr ')' | '[' expr ']' | 'options'
@@ -1187,8 +1084,6 @@ def parse_atom(tokens, options):
     else:
         return [Command(tokens.move())]
 
-
-
 def parse_argv(tokens, options, options_first=False):
     """Parse command-line argument vector.
 
@@ -1212,8 +1107,6 @@ def parse_argv(tokens, options, options_first=False):
             parsed.append(Argument(None, tokens.move()))
     return parsed
 
-
-
 def parse_defaults(doc):
     # in python < 2.7 you can't pass flags=re.MULTILINE
     split = re.split(r'\n *(<\S+?>|-\S+?)', doc)[1:]
@@ -1222,8 +1115,6 @@ def parse_defaults(doc):
     #arguments = [Argument.parse(s) for s in split if s.startswith('<')]
     #return options, arguments
     return options
-
-
 
 def printable_usage(doc):
     # in python < 2.7 you can't pass flags=re.IGNORECASE
@@ -1234,13 +1125,9 @@ def printable_usage(doc):
         raise DocoptLanguageError('More than one "usage:" (case-insensitive).')
     return re.split(r'\n\s*\n', ''.join(usage_split[1:]))[0].strip()
 
-
-
 def formal_usage(printable_usage):
     pu = printable_usage.split()[1:]  # split and drop "usage:"
     return '( ' + ' '.join(') | (' if s == pu[0] else s for s in pu[1:]) + ' )'
-
-
 
 def extras(help, version, options, doc):
     if help and any((o.name in ('-h', '--help')) and o.value for o in options):
@@ -1250,13 +1137,9 @@ def extras(help, version, options, doc):
         print(version)
         sys.exit()
 
-
-
 class Dict(dict):
     def __repr__(self):
         return '{%s}' % ',\n '.join('%r: %r' % i for i in sorted(self.items()))
-
-
 
 def docopt(doc, argv=None, help=True, version=None, options_first=False):
     """Parse `argv` based on command-line interface described in `doc`.
@@ -1345,5 +1228,4 @@ def docopt(doc, argv=None, help=True, version=None, options_first=False):
     if matched and left == []:  # better error message if left?
         return Dict((a.name, a.value) for a in (pattern.flat() + collected))
     raise DocoptExit()
-
 

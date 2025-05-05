@@ -12,19 +12,17 @@ DEBUG = False
 
 def run_cli(args):
     stdout = io.StringIO()
-    stderr = io.StringIO()
-    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-        try:
-            print(f"\nDEBUG: pyonetrue {args}", file=sys.stderr)
-            code = main(argv=["pyonetrue"] + args)
-        except SystemExit as e:
-            code = e.code
+    # stderr = io.StringIO()
+    with contextlib.redirect_stdout(stdout): # , contextlib.redirect_stderr(stderr):
+        if DEBUG: print(f"\nDEBUG: pyonetrue {args}", file=sys.stderr)
+        code = main(argv=["pyonetrue"] + args)
     if DEBUG: print(f"\nDEBUG: [stdout]\n{stdout.getvalue()}\n[-]", file=sys.stderr)
-    if DEBUG: print(f"\nDEBUG: [stderr]\n{stderr.getvalue()}\n[-]", file=sys.stderr)
+    # if DEBUG: print(f"\nDEBUG: [stderr]\n{stderr.getvalue()}\n[-]", file=sys.stderr)
     if DEBUG: print(f"\nDEBUG: [ return-code = {code} ]", file=sys.stderr)
     return type('Result', (), {'stdout': stdout.getvalue(),
-                               'stderr': stderr.getvalue(),
+                              #'stderr': stderr.getvalue(),
                                'returncode': code})()
+
 
 def test_cli_omit_guards_by_default(tmp_path):
     src = tmp_path / 'mod.py'
@@ -34,7 +32,7 @@ def test_cli_omit_guards_by_default(tmp_path):
     assert 'if __name__' not in result.stdout
     assert 'def x' in result.stdout
 
-def test_cli_all_guards(tmp_path):
+def test_cli_all_guards_single(tmp_path):
     src = tmp_path / 'mod.py'
     src.write_text('def x(): pass\nif __name__ == "__main__": x()')
     result = run_cli(['--all-guards', str(src)])
