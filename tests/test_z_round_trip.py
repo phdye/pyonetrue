@@ -21,24 +21,30 @@ def test_round_trip_flatten_and_run_tests():
     assert result.returncode == 0, f"Flattening failed:\\n{result.stdout}"
 
     # Step 2: Import flattened module
+    # sys.path.insert(0, str(flat_dir))
+    # try:
+    #     __import__("pyonetrue")
+    # except Exception as e:
+    #     pytest.fail(f"Importing flattened module failed: {e}")
+    # finally:
+    #     sys.path.pop(0)
+    import importlib
     sys.path.insert(0, str(flat_dir))
+    sys.modules.pop("pyonetrue", None)  # Clear old module if present
+    importlib.invalidate_caches()
     try:
         __import__("pyonetrue")
     except Exception as e:
         pytest.fail(f"Importing flattened module failed: {e}")
-    finally:
-        sys.path.pop(0)
+    print(f"\n*** Reloaded pyonetrue from: {pyonetrue.__file__}")
 
     # Step 3: Rerun all tests excluding this one
-    # env = dict(**os.environ, PYONETRUE_ROUND_TRIP="1") -- an issue within some environments
-    env = os.environ.copy()
-    env["PYONETRUE_ROUND_TRIP"] = "1"
-    rerun = subprocess.run([
-        sys.executable, "-m", "pytest", "tests"
-    ], cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    assert rerun.returncode == 0, f"Tests after flattening failed:\\n{rerun.stdout}"
+    print("*** Rerunning tests after flattening")
+    os.environ["PYONETRUE_ROUND_TRIP"] = "1"
+    return_code = pytest.main(["tests", "-k", "not test_round_trip_flatten_and_run_tests"])
+    assert return_code == 0, f"Tests after flattening failed"
 
 @pytest.mark.skipif(os.getenv("PYONETRUE_ROUND_TRIP") != "1", reason="Only runs in round-trip mode")
-def _test_fail_behavior():
+def test_fail_behavior():
     # When enabled, this test demonstrates failure during round-trip subprocess
     assert False

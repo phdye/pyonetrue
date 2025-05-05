@@ -73,7 +73,7 @@ def test_deduplicate_same_import():
     spans = [imp("from os import path"), imp("from os import path")]
     normalized, _ = normalize_imports("pkg", spans)
     texts = [s.text for s in normalized]
-    assert texts.count("from os import path") == 1
+    assert texts.count("from os import path\n") == 1
 
 def test_group_stdlib_and_third_party():
     spans = [imp("import os"), imp("import requests")]
@@ -109,14 +109,22 @@ def test_unicode_import_symbol():
     normalized, _ = normalize_imports("pkg", spans)
     assert any("αβ" in s.text for s in normalized)
 
-def test_deduplicate_import_alias():
+def test_no_deduplicate_import_alias():
     spans = [imp("import os as o"), imp("import os")]  # same real module
     normalized, _ = normalize_imports("pkg", spans + spans)
     text = "\n".join(s.text for s in normalized)
-    # Should de-duplicate 'os', 'os as o'
+    # Should de-duplicate the second copy of each import
     # Should not de-duplicate 'os' vs 'os as o', different imported symbol
     assert text.count("import os\n") == 1
     assert text.count("import os as o\n") == 1
+
+def test_deduplicate_imports():
+    spans = [imp("import sys"), imp("import os")]  # same real module
+    normalized, _ = normalize_imports("pkg", spans + spans)
+    text = "\n".join(s.text for s in normalized)
+    # Should de-duplicate the second copy of each import
+    assert text.count("import sys\n") == 1
+    assert text.count("import os\n") == 1
 
 def test_import_clash():
     # Clash: importing "path" from two different modules should raise
@@ -138,7 +146,7 @@ def test_is_stdlib_module_basic():
 def test_preserve_plain_import_format():
     spans = [imp("import os")]
     normalized, _ = normalize_imports("mypkg", spans)
-    assert any(span.text == "import os" for span in normalized)
+    assert any(span.text == "import os\n" for span in normalized)
 
 def test_preserve_from_import_format():
     spans = [imp("from os import path")]

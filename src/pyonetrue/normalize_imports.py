@@ -115,11 +115,11 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
             plain_entries = [e for e in entries if e.is_plain_import]
             from_entries  = [e for e in entries if not e.is_plain_import]
             if plain_entries:
-                lines = format_plain_import(plain_entries)
-                output_spans.extend([Span(kind="import", text=line) for line in sorted(lines)])
+                text = "\n".join(format_plain_import(plain_entries)) + '\n'
+                output_spans.append(Span(kind="import", text=text))
             if from_entries:
-                lines = format_from_import(from_entries)
-                output_spans.extend([Span(kind="import", text=line) for line in sorted(lines)])
+                text = "\n".join(format_from_import(from_entries)) + '\n'
+                output_spans.append(Span(kind="import", text=text))
         output_spans.append(Span(kind="blank", text="\n"))
 
     return output_spans, imported_names
