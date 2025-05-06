@@ -15,12 +15,15 @@ def test_round_trip_flatten_and_run_tests():
 
     flat_dir = root / "flat"
     flat_dir.mkdir(exist_ok=True)
+    output_file = flat_dir / "pyonetrue.py"
 
     # Step 1: Flatten
+    print(f"\n*** Flattening to: {output_file}")
+
     result = subprocess.run([
-        "scripts/runner", "src/pyonetrue", "--no-cli", "--output", "flat/pyonetrue.py"
+        "scripts/runner", "src/pyonetrue", "--no-cli", "--output", str(output_file),
     ], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    assert result.returncode == 0, f"Flattening failed:\\n{result.stdout}"
+    assert result.returncode == 0, f"Flattening failed:\n{result.stdout}"
 
     # Step 2: Import flattened module
     import importlib
@@ -36,7 +39,7 @@ def test_round_trip_flatten_and_run_tests():
     sys.modules["pyonetrue"] = pyonetrue
     spec.loader.exec_module(pyonetrue)
     
-    print(f"\n*** Reloaded pyonetrue from: {pyonetrue.__file__}")
+    print(f"*** Reloaded pyonetrue from: {pyonetrue.__file__}")
 
     assert pyonetrue.__file__.endswith("/flat/pyonetrue.py"), "Flattened module not loaded correctly"
 

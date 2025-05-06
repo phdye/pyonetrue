@@ -6,7 +6,7 @@ import pytest
 import io
 import contextlib
 
-from pyonetrue import main
+from pyonetrue import main, CLIOptionError
 
 DEBUG = False
 

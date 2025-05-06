@@ -9,6 +9,7 @@ from pyonetrue import (
     set_line_length,
     get_line_length,
     ImportEntry,
+    ImportNormalizationError,
 )
 
 # Helper for building simple import spans
@@ -49,9 +50,9 @@ def test_set_and_get_line_length():
     set_line_length(old_length)  # restore after test
 
 def test_invalid_line_length_setting():
-    with pytest.raises(ValueError):
+    with pytest.raises(ImportNormalizationError, match=r"`line_length` must be > 0"):
         set_line_length(0)
-    with pytest.raises(ValueError):
+    with pytest.raises(ImportNormalizationError, match=r"`line_length` must be > 0"):
         set_line_length(-10)
 
 def test_basic_simple_import():
@@ -132,7 +133,7 @@ def test_import_clash():
         imp("from os import path"),
         imp("from custom import path"),
     ]
-    with pytest.raises(ValueError, match="Name clash detected: path"):
+    with pytest.raises(ImportNormalizationError, match=r"name clash importing .* from .*, already imported from .*"):
         normalize_imports("pkg", spans)
 
 def test_is_stdlib_module_basic():

@@ -1,4 +1,4 @@
-USAGE=r"""
+r"""
 Usage:
   pyonetrue [options] <input>
   pyonetrue (-h | --help)
@@ -61,16 +61,19 @@ from pathlib import Path
 
 from .vendor.docopt import docopt
 from .flattening import FlatteningContext
+from .exceptions import CLIOptionError
 
 __version__ = "0.5.4"
+
+USAGE = __doc__
 
 def main(argv=sys.argv):
     """Main function to run the CLI tool."""
 
     args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
-        raise ValueError("Invalid options: cannot specify both --no-cli and --main-from")
-
+        raise CLIOptionError("cannot specify both --no-cli and --main-from")
+    
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',

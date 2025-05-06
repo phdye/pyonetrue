@@ -18,6 +18,8 @@ __all__ = [
 # flattening
     "FlatteningContext",
     "FlatteningModule",
+    "normalize_a_module_name",
+    "normalize_module_names",
 # normailize_imports :
     "normalize_imports",
     "format_plain_import",
@@ -26,6 +28,15 @@ __all__ = [
     "set_line_length",
     "get_line_length",
     "ImportEntry",
+# exceptions
+    "PyonetrueError",
+    "CLIOptionError",
+    "DuplicateNameError",
+    "ImportNormalizationError",
+    "IncludeExcludeError",
+    "FlatteningError",
+    "ModuleInferenceError",
+    "PathError",
 ]
 
 USAGE=r"""
@@ -93,8 +104,8 @@ def main(argv=sys.argv):
 
     args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
-        raise ValueError("Invalid options: cannot specify both --no-cli and --main-from")
-
+        raise CLIOptionError("cannot specify both --no-cli and --main-from")
+    
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
@@ -133,6 +144,42 @@ def main(argv=sys.argv):
         Path(ctx.output).write_text(text)
 
     return 0
+
+"""
+Custom exceptions for pyonetrue, each representing a single, specific error scenario.
+"""
+
+class PyonetrueError(Exception):
+    """Base exception for all pyonetrue errors."""
+    pass
+
+class CLIOptionError(PyonetrueError):
+    """Invalid combination or value of CLI options."""
+    pass
+
+class DuplicateNameError(PyonetrueError):
+    """Detected duplicate top-level symbol names."""
+    pass
+
+class ImportNormalizationError(PyonetrueError):
+    """Errors during import deduplication and normalization processes."""
+    pass
+
+class IncludeExcludeError(PyonetrueError):
+    """Invalid usage of include/exclude flags."""
+    pass
+
+class FlatteningError(PyonetrueError):
+    """General errors occurring in the flattening pipeline."""
+    pass
+
+class ModuleInferenceError(PyonetrueError):
+    """Cannot infer package or module name from the given path."""
+    pass
+
+class PathError(PyonetrueError):
+    """Errors related to filesystem paths or module resolution."""
+    pass
 
 class Span:
     """
@@ -209,15 +256,15 @@ class FlatteningContext:
 
     package_path       : Union[Path, str]
     package_name       : str                           = ""
-    main_py            : tuple[str, list[Span]]        = (None, [])
-    module_spans       : list[tuple[str, list[Span]]]  = field(default_factory=list)
-    guard_sources      : dict[str, list[Span]]         = field(default_factory=dict)
+    main_py            : tuple[str, List[Span]]        = (None, [])
+    module_spans       : List[tuple[str, List[Span]]]  = field(default_factory=list)
+    guard_sources      : dict[str, List[Span]]         = field(default_factory=dict)
 
     # Discovery -- inclusion/exclusion
     no_cli             : bool                          = False
-    main_from          : list[str]                     = field(default_factory=list)
-    exclude            : list[str]                     = field(default_factory=list)
-    include            : list[str]                     = field(default_factory=list)
+    main_from          : List[str]                     = field(default_factory=list)
+    exclude            : List[str]                     = field(default_factory=list)
+    include            : List[str]                     = field(default_factory=list)
 
     # Conflict detection
     ignore_clashes     : bool                          = False
@@ -226,11 +273,11 @@ class FlatteningContext:
     output             : str                           = "stdout"
     shebang            : str                           = "#!/usr/bin/env python3"
     guards_all         : bool                          = False
-    guards_from        : list[str]                     = field(default_factory=list)
+    guards_from        : List[str]                     = field(default_factory=list)
 
     def __post_init__(self):
         if not self.package_path:
-            raise ValueError("package 'package_path' cannot be empty (None, '', etc.)")
+            raise PathError("package_path cannot be empty")
         # Resolve package_path to file, dir, or package name
         path = Path(self.package_path)
         if DEBUG: print(f"DEBUG: Resolved path = {path}", file=sys.stderr)
@@ -240,15 +287,15 @@ class FlatteningContext:
             elif path.is_file():
                 self.package_name = path.stem
             else:
-                raise ValueError(f"input path '{self.package_path}' exists but is neither a file nor a directory")
+                raise PathError(f"input path '{self.package_path}' is not a file or directory")
         else:
-            if DEBUG: print("DEBUG: package_path not   found as file/dir, trying as package name", file=sys.stderr)
+            if DEBUG: print("DEBUG: package_path not found as file/dir, trying as package name", file=sys.stderr)
             spec = importlib.util.find_spec(self.package_path)
             if spec and spec.submodule_search_locations:
                 path = Path(spec.submodule_search_locations[0])
                 self.package_name = path.name
             else:
-                raise ValueError(f"Cannot infer project package name from {self.package_path!r}")
+                raise ModuleInferenceError(f"cannot infer package name from '{self.package_path!r}'")
 
         self.package_path = path
 
@@ -269,7 +316,7 @@ class FlatteningContext:
             if DEBUG: print(f"DEBUG: exclude = {self.exclude}", file=sys.stderr)
             if DEBUG: print(f"DEBUG: include = {self.include}", file=sys.stderr)
         elif self.include:
-            raise ValueError("Cannot specify `include` without `exclude`")
+            raise IncludeExcludeError("`include` flag require `exclude` to be set")
 
         # Normalize self.guards_from to fully-qualified names
         if self.guards_from:
@@ -283,17 +330,20 @@ class FlatteningContext:
 
     def add_module(self, obj: Union[str, Path, "FlatteningModule"]) -> None:
         if not obj:
-            raise ValueError("module 'path' cannot be empty (None, '', etc.)")
+            raise PathError("module path cannot be empty")
         if isinstance(obj, FlatteningModule):
             fm = obj
         elif isinstance(obj, (Path, str)):
             fm = FlatteningModule(self, Path(obj))
         else:
-            raise ValueError(f"Invalid module path: {obj} -- must be str, Path, or FlatteningModule")
+            raise PathError(f"Invalid module path: {obj} -- must be str, Path, or FlatteningModule")
 
         if DEBUG: print(f"\nDEBUG: Adding module {fm.module = } from {fm.path = }", file=sys.stderr)
 
-        spans = extract_spans(fm.path)
+        try:
+            spans = extract_spans(fm.path)
+        except Exception as e:
+            raise FlatteningError(f"failed to extract spans from {fm.path}") from e
         if DEBUG: print("DEBUG add_module : spans :\n"+"\n".join(span.text for span in spans), file=sys.stderr)
         self.module_spans.append((fm.module, spans))
 
@@ -437,8 +487,9 @@ class FlatteningContext:
                     else:
                         continue
                     if name in seen:
-                        raise Exception(f"Duplicate top-level name detected: {name}")
+                        raise DuplicateNameError(f"Duplicate top-level name: {name}")
                     seen.add(name)
+
 
     def get_final_output_spans(self):
         all_decl, root_imports, root_logic = self.gather_root_spans()
@@ -462,12 +513,12 @@ class FlatteningModule:
 
     def __init__(self, ctx : FlatteningContext, path: Path):
         if not path.is_file():
-            raise ValueError(f"FlatteningModule must be created from a file: {path}")
+            raise PathError(f"FlatteningModule must be created from a file: {path}")
 
         try:
             relpath = path.relative_to(ctx.package_path)
         except ValueError:
-            raise ValueError(f"Path {path} is not inside package root {ctx.package_path}")
+            raise PathError(f"Path {path} is not inside package root {ctx.package_path}")
 
         if relpath == Path('.'):
             relpath = Path(ctx.package_path.name)
@@ -479,7 +530,7 @@ class FlatteningModule:
 
         self.path = path
 
-def dotted_member_of(dotted: str, module_list: list[str]) -> bool:
+def dotted_member_of(dotted: str, module_list: List[str]) -> bool:
     if not module_list:
         return False
     for module in module_list:
@@ -494,20 +545,22 @@ def dotted_of_module(module: str, dotted: str) -> bool:
         return True
     return False
 
-def normalize_a_module_name(mod: str, package_name: str) -> str:
-    if mod.startswith(package_name + ".") or mod == package_name:
-        return mod
+def normalize_a_module_name(module_name: str, package_name: str) -> str:
+    if not isinstance(module_name, str):
+        raise FlatteningError(f"module_name must be str, not {type(module_name)} : {module_name!r}")
+    if module_name.startswith(package_name + ".") or module_name == package_name:
+        return module_name
     else:
-        return package_name + "." + mod.lstrip('.')
+        return package_name + "." + module_name.lstrip('.')
 
 def normalize_module_names(
     package_name: str,
-    module_names: Union[str, list[str]]
+    module_names: Union[str, List[str]]
 ) -> list[str]:
     if isinstance(module_names, str):
         module_names = [normalize_a_module_name(module_names, package_name)]
     if not isinstance(module_names, list):
-        raise ValueError(f"module_names must be str or list of str, not {type(module_names)}")
+        raise FlatteningError(f"module_names must be str or list of str, not {type(module_names)}")
     return [normalize_a_module_name(mod, package_name) for mod in module_names]
 
 try :
@@ -592,7 +645,7 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
         if key in seen:
             continue
         if name in names:
-            raise ValueError(f"Name clash detected: {name} in module {entry.module}, already imported from {names[name]}")
+            raise ImportNormalizationError(f"name clash importing `{name}` from {entry.module}, already imported from {names[name]}")
         seen.add(key)
         names[name] = entry.module
         imported_names.append(name)
@@ -678,7 +731,7 @@ def set_line_length(length: int):
     if length > 0:
         LINE_LENGTH = length
     else:
-        raise ValueError("Line length must be a positive integer.")
+        raise ImportNormalizationError("`line_length` must be > 0")
 
 def get_line_length() -> int:
     """

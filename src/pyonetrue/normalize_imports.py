@@ -5,6 +5,7 @@ from typing import List, Tuple
 from dataclasses import dataclass
 
 from .extract_ast import Span
+from .exceptions import ImportNormalizationError
 
 try :
     from stdlib_list import stdlib_list
@@ -90,7 +91,7 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
         if key in seen:
             continue
         if name in names:
-            raise ValueError(f"Name clash detected: {name} in module {entry.module}, already imported from {names[name]}")
+            raise ImportNormalizationError(f"name clash importing `{name}` from {entry.module}, already imported from {names[name]}")
         seen.add(key)
         names[name] = entry.module
         imported_names.append(name)
@@ -177,7 +178,7 @@ def set_line_length(length: int):
     if length > 0:
         LINE_LENGTH = length
     else:
-        raise ValueError("Line length must be a positive integer.")
+        raise ImportNormalizationError("`line_length` must be > 0")
 
 # Get the current line length
 def get_line_length() -> int:

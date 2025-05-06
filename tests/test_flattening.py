@@ -3,7 +3,18 @@ from pathlib import Path
 
 import textwrap
 
-from pyonetrue import FlatteningContext, FlatteningModule
+from pyonetrue import (
+    FlatteningContext,
+    FlatteningModule,
+    normalize_a_module_name,
+    normalize_module_names,
+    CLIOptionError,
+    DuplicateNameError,
+    IncludeExcludeError,
+    FlatteningError,
+    ModuleInferenceError,
+    PathError,
+)
 
 def test_flatten_context_preserves_order(tmp_path):
     mod1 = tmp_path / 'mod1.py'
@@ -40,7 +51,7 @@ def test_flatten_clashes(tmp_path):
     ctx = FlatteningContext(package_path=tmp_path)
     ctx.add_module(f1)
     ctx.add_module(f2)
-    with pytest.raises(Exception):
+    with pytest.raises(DuplicateNameError):
         ctx.get_final_output_spans()
 
 def test_flattening_context_init_with_directory(tmp_path):
@@ -61,7 +72,7 @@ def test_flattening_context_init_with_file(tmp_path):
     assert ctx.package_name == "module"
 
 def test_flattening_context_invalid_package_path():
-    with pytest.raises(ValueError):
+    with pytest.raises(ModuleInferenceError):
         FlatteningContext("/nonexistent/path")
 
 def test_new_module_correct_mapping(tmp_path):
@@ -80,7 +91,7 @@ def test_new_module_outside_package_root(tmp_path):
     other_file = tmp_path / "outside.py"
     other_file.write_text("")
     ctx = FlatteningContext(str(pkg))
-    with pytest.raises(ValueError):
+    with pytest.raises(PathError, match=r"Path .* is not inside package root .*"):
         ctx.new_module(other_file)
 
 def test_add_module_from_path(tmp_path):
@@ -117,7 +128,7 @@ def test_clash_detection_duplicate_function_names(tmp_path):
     ctx = FlatteningContext(str(pkg))
     ctx.add_module(pkg / "a.py")
     ctx.add_module(pkg / "b.py")
-    with pytest.raises(Exception, match="Duplicate top-level name detected"):
+    with pytest.raises(DuplicateNameError, match=r"Duplicate top-level name: .*"):
         ctx.get_final_output_spans()
 
 def test_ignore_clashes_flag(tmp_path):
@@ -146,7 +157,7 @@ def test_flatteningmodule_error_if_not_under_root(tmp_path):
     other_file = tmp_path / "outsider.py"
     other_file.write_text("")
     ctx = FlatteningContext(str(pkg))
-    with pytest.raises(ValueError):
+    with pytest.raises(PathError, match=r"Path .* is not inside package root .*"):
         FlatteningModule(ctx, other_file)
 
 def test_flatteningmodule_init_with_init_py(tmp_path):
@@ -330,9 +341,8 @@ def test_clash_with_import_name(tmp_path):
     write(pkg, "__init__.py", "from foo import bar\ndef bar(): pass")
     ctx = FlatteningContext(package_path=pkg)
     ctx.discover_modules()
-    with pytest.raises(Exception) as e:
+    with pytest.raises(DuplicateNameError, match=r"Duplicate top-level name: .*"):
         ctx.get_final_output_spans()
-    assert "Duplicate top-level name" in str(e.value)
 
 def test_exclude_with_nested_include_override(tmp_path):
     pkg = tmp_path / "pkg"
@@ -370,8 +380,9 @@ def test_invalid_syntax_in_module(tmp_path):
     pkg = tmp_path / "pkg"
     path = write(pkg, "bad.py", "def broken(:\n")  # invalid syntax
     ctx = FlatteningContext(package_path=pkg)
-    with pytest.raises(SyntaxError):
+    with pytest.raises(FlatteningError) as e:
         ctx.add_module(path)
+    assert isinstance(e.value.__cause__, SyntaxError), "Expected SyntaxError for invalid syntax"    
 
 def test_non_utf8_file_handling(tmp_path):
     pkg = tmp_path / "pkg"
@@ -379,8 +390,9 @@ def test_non_utf8_file_handling(tmp_path):
     path.parent.mkdir(exist_ok=True)
     path.write_bytes(b"\xff\xfe\x00bad encoding")
     ctx = FlatteningContext(package_path=pkg)
-    with pytest.raises(UnicodeDecodeError):
+    with pytest.raises(FlatteningError) as e:
         ctx.add_module(path)
+    assert isinstance(e.value.__cause__, UnicodeDecodeError), "Expected UnicodeDecodeError for non-UTF-8 file"
 
 def test_deduplicate_imports(tmp_path):
     pkg = tmp_path / "pkg"
@@ -392,3 +404,10 @@ def test_deduplicate_imports(tmp_path):
     text = "\n".join(span.text for span in ctx.get_final_output_spans())
     assert text.count("import sys") == 1, "Duplicate imports not deduplicated"
 
+def test_normalize_a_module_name_invalid_type():
+    with pytest.raises(FlatteningError):
+        normalize_a_module_name(123, "mypkg")  # not a string
+
+def test_normalize_module_names_invalid_type():
+    with pytest.raises(FlatteningError):
+        normalize_module_names("mypkg", 456)  # not a string or list

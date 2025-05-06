@@ -1,8 +1,10 @@
 from .extract_ast import extract_spans, Span
 
 from .flattening import (
-        FlatteningContext,
-        FlatteningModule,
+    FlatteningContext,
+    FlatteningModule,
+    normalize_a_module_name,
+    normalize_module_names,
 )
 
 from .normalize_imports import (
@@ -17,6 +19,17 @@ from .normalize_imports import (
 
 from .cli import __version__, main
 
+from .exceptions import (
+    PyonetrueError,
+    CLIOptionError,
+    DuplicateNameError,
+    ImportNormalizationError,
+    IncludeExcludeError,
+    FlatteningError,
+    ModuleInferenceError,
+    PathError,
+)
+
 __all__ = [
 # cli
     "__version__",
@@ -27,6 +40,8 @@ __all__ = [
 # flattening
     "FlatteningContext",
     "FlatteningModule",
+    "normalize_a_module_name",
+    "normalize_module_names",
 # normailize_imports :
     "normalize_imports",
     "format_plain_import",
@@ -35,4 +50,13 @@ __all__ = [
     "set_line_length",
     "get_line_length",
     "ImportEntry",
+# exceptions
+    "PyonetrueError",
+    "CLIOptionError",
+    "DuplicateNameError",
+    "ImportNormalizationError",
+    "IncludeExcludeError",
+    "FlatteningError",
+    "ModuleInferenceError",
+    "PathError",
 ]
