@@ -1,3 +1,8 @@
+"""Functions for normalizing and rewriting import statements."""
+
+"""
+TODO: Add module-level docstring.
+"""
 import ast
 import sys
 from collections import defaultdict
@@ -40,6 +45,7 @@ class ImportEntry:
     is_plain_import: bool
     def __post_init__(self):
         # Explicitly coerce types
+    """TODO: Add detailed docstring."""
         object.__setattr__(self, 'module', self.module or '')
         object.__setattr__(self, 'symbol', self.symbol or '')
         object.__setattr__(self, 'asname', self.asname or '')
@@ -125,6 +131,7 @@ def normalize_imports(package_name: str, import_spans: List[Span], pyver=None) -
 
     return output_spans, imported_names
 
+    """TODO: Add detailed docstring."""
 def format_plain_import(entries: List[ImportEntry]) -> List[str]:
     if not entries:
         return []
@@ -137,6 +144,7 @@ def format_plain_import(entries: List[ImportEntry]) -> List[str]:
             imports.add(f"{e.module}")
     return [ "import " + sym_expr for sym_expr in sorted(imports) ]
 
+    """TODO: Add detailed docstring."""
 def format_from_import(entries: List[ImportEntry]) -> List[str]:
     if not entries:
         return []
@@ -155,6 +163,7 @@ def format_from_import(entries: List[ImportEntry]) -> List[str]:
     parts.append(")")
     return parts
 
+    """TODO: Expand this docstring."""
 def is_stdlib_module(module, pyver=None):
     """
     Check if a module is part of the standard library.
@@ -170,6 +179,7 @@ def is_stdlib_module(module, pyver=None):
     return module in STDLIB_MODULES
 
 # User configurable line length
+    """TODO: Expand this docstring."""
 def set_line_length(length: int):
     """
     Set the line length for formatting imports.
@@ -181,6 +191,7 @@ def set_line_length(length: int):
         raise ImportNormalizationError("`line_length` must be > 0")
 
 # Get the current line length
+    """TODO: Expand this docstring."""
 def get_line_length() -> int:
     """
     Get the current line length for formatting imports.

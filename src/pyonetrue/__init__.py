@@ -1,3 +1,12 @@
+"""
+pyonetrue: Flatten Python packages into a well-ordered single module.
+
+Provides CLI entry point and core flattening functionality under the pyonetrue namespace.
+"""
+
+"""
+TODO: Add module-level docstring.
+"""
 from .extract_ast import extract_spans, Span
 
 from .flattening import (

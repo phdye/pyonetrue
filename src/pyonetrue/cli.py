@@ -1,4 +1,7 @@
-r"""
+"""
+TODO: Add module-level docstring.
+"""
+USAGE=r"""
 Usage:
   pyonetrue [options] <input>
   pyonetrue (-h | --help)
@@ -65,10 +68,22 @@ from .exceptions import CLIOptionError
 
 __version__ = "0.5.4"
 
-USAGE = __doc__
-
 def main(argv=sys.argv):
-    """Main function to run the CLI tool."""
+    """Main entry point for the CLI tool.
+
+    Parses command-line arguments, configures the FlatteningContext,
+    executes the flattening process, and handles output.
+
+    Args:
+        argv (list of str): Command-line arguments (including program name).
+
+    Returns:
+        int: Exit code (0 on success, non-zero on error).
+
+    Examples:
+        >>> main(["pyonetrue", "my_package"])
+        0
+    """
 
     args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:

@@ -1,7 +1,7 @@
 NAME           := pyonetrue
 PROJECT        := $${PWD\#\#*/}
 # FILES          := {Makefile,${NAME},doc/0.5,src,tests,scripts}
-FILES          := {Makefile,LICENSE,*.*,doc,src,tests,scripts}
+FILES          := {Makefile,LICENSE,*.*,src,tests,scripts}
 
 # make test n=1 t="test/*_wh*.py"
 NETWORK        := $(or $(NETWORK), $(network), $(N), $(n))
