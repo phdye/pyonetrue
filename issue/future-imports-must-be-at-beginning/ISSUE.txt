@@ -1,0 +1,10 @@
++ cd ~/src/wrapped/cygport
++ PYTHONPATH=. pyonetrue --output flat/cygport.py cygport
++ python3 flat/cygport.py
+="/dev/pty2" COLUMNS="121" LINES="38"]
++ python flat/cygport.py
+  File "/c/-/self/src/wrapped/cygport/flat/cygport.py", line 7
+    from __future__ import print_function
+    ^
+SyntaxError: from __future__ imports must occur at the beginning of the file
+
