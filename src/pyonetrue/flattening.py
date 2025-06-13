@@ -171,13 +171,23 @@ class FlatteningContext:
             self.add_module(subpath)
 
     def gather_root_spans(self):
+        docstring = None
         retained_all = None
         retained_imports = []
         retained_logic = []
 
         for mod, spans in self.module_spans:
-            if mod == self.package_name:
-                for s in spans:
+            first_logic = True
+            for s in spans:
+                if docstring is None and first_logic and s.kind == "logic" and (
+                    s.text.lstrip().startswith("\"\"\"") or s.text.lstrip().startswith("'''")
+                ):
+                    docstring = s
+                    first_logic = False
+                    continue
+                first_logic = False
+
+                if mod == self.package_name:
                     if s.kind == "__all__":
                         retained_all = s
                     elif s.kind == "import":
@@ -186,13 +196,15 @@ class FlatteningContext:
                         pass
                     else:
                         retained_logic.append(s)
-        return retained_all, retained_imports, retained_logic
+        return docstring, retained_all, retained_imports, retained_logic
 
     def gather_module_spans(self):
         non_root_spans = []
 
+        main_mod, _ = self.main_py
+
         for mod, spans in self.module_spans:
-            if mod == self.package_name:
+            if mod == self.package_name or mod == main_mod:
                 continue
             for s in spans:
                 if s.kind != "main_guard":
@@ -213,21 +225,35 @@ class FlatteningContext:
 
     def get_main_spans(self):
         main_mod, main_spans = self.main_py
-        return main_spans if (main_mod and main_spans and not self.no_cli) else []
+        if not (main_mod and main_spans and not self.no_cli):
+            return []
+        return [s for s in main_spans if s.kind != "import"]
 
-    def normalize_and_assemble(self, imports, all_decl, logic, guards, main):
-        # Normalize imports
-        imports, import_symbols = normalize_imports(
+    def normalize_and_assemble(self, imports, all_decl, logic, guards, main, docstring=None):
+        future_imports = [s for s in imports if "from __future__" in s.text]
+        regular_imports = [s for s in imports if s not in future_imports]
+
+        regular_imports, import_symbols = normalize_imports(
             package_name=self.package_name,
-            import_spans=imports,
+            import_spans=regular_imports,
         )
 
-        ordered = list(imports)
-
+        ordered = []
         blank_line = Span(kind="blank", text="\n")
 
-        if all_decl:
+        if docstring:
+            ordered.append(docstring)
             ordered.append(blank_line)
+
+        ordered.extend(future_imports)
+        if future_imports:
+            ordered.append(blank_line)
+
+        ordered.extend(regular_imports)
+        if regular_imports:
+            ordered.append(blank_line)
+
+        if all_decl:
             ordered.append(all_decl)
             ordered.append(blank_line)
 
@@ -257,7 +283,7 @@ class FlatteningContext:
 
 
     def get_final_output_spans(self):
-        all_decl, root_imports, root_logic = self.gather_root_spans()
+        docstring, all_decl, root_imports, root_logic = self.gather_root_spans()
         module_spans = self.gather_module_spans()
         main_guards = self.gather_main_guard_spans()
         main_body = self.get_main_spans()
@@ -266,7 +292,7 @@ class FlatteningContext:
         logic = root_logic + [s for s in module_spans if s.kind not in["import", "main_guard"]]
 
         spans, import_symbols = self.normalize_and_assemble(
-            imports, all_decl, logic, main_guards, main_body
+            imports, all_decl, logic, main_guards, main_body, docstring
         )
 
         self.check_clashes(spans, import_symbols)
