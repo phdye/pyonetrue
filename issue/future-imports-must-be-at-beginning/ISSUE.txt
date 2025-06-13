@@ -2,7 +2,7 @@
 + PYTHONPATH=. pyonetrue --output flat/cygport.py cygport
 + python3 flat/cygport.py
 ="/dev/pty2" COLUMNS="121" LINES="38"]
-+ python flat/cygport.py
++ python3 flat/cygport.py
   File "/c/-/self/src/wrapped/cygport/flat/cygport.py", line 7
     from __future__ import print_function
     ^
