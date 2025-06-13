@@ -1,0 +1,12 @@
+pyonetrue crashed when trying to run against `dlocate`.  Source archive included.
+
+1. Create a minimal test case that triggers this bug.
+
+2. Fix the bug such that the test passes
+
+3. Conclusively demonstrate that this bug is fixed by:
+   a. Do not change the target package/module/program implementation in any way.
+   b. Generate a valid single file module for the it.
+   c. Execute/import it without error
+      - program:   python3 <program> --help
+      - module:    PYTHONPATH=. python3 -c "import <module>"
