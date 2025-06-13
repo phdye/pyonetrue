@@ -27,7 +27,8 @@ def test_round_trip_flatten_and_run_tests():
 
     # Step 2: Import flattened module
     import importlib
-    sys.path.remove(str(src_dir))
+    if str(src_dir) in sys.path:
+        sys.path.remove(str(src_dir))
     sys.path.insert(0, str(flat_dir))
     sys.modules.pop("pyonetrue", None)  # Clear old module if present
     importlib.invalidate_caches()
