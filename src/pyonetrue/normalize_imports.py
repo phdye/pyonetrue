@@ -45,7 +45,7 @@ class ImportEntry:
     is_plain_import: bool
     def __post_init__(self):
         # Explicitly coerce types
-    """TODO: Add detailed docstring."""
+        """TODO: Add detailed docstring."""
         object.__setattr__(self, 'module', self.module or '')
         object.__setattr__(self, 'symbol', self.symbol or '')
         object.__setattr__(self, 'asname', self.asname or '')

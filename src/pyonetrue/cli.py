@@ -1,6 +1,3 @@
-"""
-TODO: Add module-level docstring.
-"""
 USAGE=r"""
 Usage:
   pyonetrue [options] <input>
