@@ -91,8 +91,8 @@ class Pattern(object):
                 optional = [c for c in children if type(c) is DocoptOptional][0]
                 children.pop(children.index(optional))
                 groups.append(list(optional.children) + children)
-            elif AnyOptions in types:
-                optional = [c for c in children if type(c) is AnyOptions][0]
+            elif DocoptAnyOptions in types:
+                optional = [c for c in children if type(c) is DocoptAnyOptions][0]
                 children.pop(children.index(optional))
                 groups.append(list(optional.children) + children)
             elif OneOrMore in types:
@@ -245,7 +245,7 @@ class DocoptOptional(ParentPattern):
         return True, left, collected
 
 
-class AnyOptions(DocoptOptional):
+class DocoptAnyOptions(DocoptOptional):
 
     """Marker/placeholder for [options] shortcut."""
 
@@ -416,7 +416,7 @@ def parse_atom(tokens, options):
         return [result]
     elif token == 'options':
         tokens.move()
-        return [AnyOptions()]
+        return [DocoptAnyOptions()]
     elif token.startswith('--') and token != '--':
         return parse_long(tokens, options)
     elif token.startswith('-') and token not in ('-', '--'):
@@ -566,7 +566,7 @@ def docopt(doc, argv=None, help=True, version=None, options_first=False):
     argv = parse_argv(TokenStream(argv, DocoptExit), list(options),
                       options_first)
     pattern_options = set(pattern.flat(Option))
-    for ao in pattern.flat(AnyOptions):
+    for ao in pattern.flat(DocoptAnyOptions):
         doc_options = parse_defaults(doc)
         ao.children = list(set(doc_options) - pattern_options)
         #if any_options:
