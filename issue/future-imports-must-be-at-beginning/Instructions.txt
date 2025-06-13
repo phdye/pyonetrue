@@ -1,0 +1,12 @@
+pyonetrue created a single module with a __future__ not at the beginning.
+
+This occurred for `cygport`, a command wrapper for Cygwin's cygport command, 
+
+1. Create a minimal test case that triggers this bug.
+
+2. Fix the bug such that the test passes
+
+3. Conclusively demonstrate that this bug is fixed by:
+   a. Do not change the cygport implementation in any way.
+   b. Generate a valid single file module for `cygport`, flat/cygport.py.
+   c. Execute without error:  python flat/cygport.py --help
