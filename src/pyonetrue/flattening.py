@@ -13,7 +13,10 @@ from .exceptions import (
     ModuleInferenceError,
     PathError,
 )
-from .vendor.pathlib import Path
+try :
+    from pathlib import Path
+except ImportError:
+    from .vendor.pathlib import Path
 
 DEBUG = False
 
