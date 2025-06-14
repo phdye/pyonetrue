@@ -49,6 +49,9 @@ Options:
   -g, --guards-from <mod>  Include __main__ guards only from <mod>.
   -e, --exclude <exclude>  Exclude specified packages or modules, comma separated.
   -i, --include <include>  Exclude specified packages or modules, comma separated.
+  --entry <entry>          Explicitly build for the given entry point. May be
+                           repeated. If omitted, all defined entry points are
+                           used.
   --ignore-clashes         Allow duplicate top-level names without error.
   -h, --help               Show this help message.
   --version                Show version.
@@ -58,10 +61,29 @@ Options:
 
 import sys
 from pathlib import Path
+import tomllib
 
 from .vendor.docopt import docopt
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
+
+
+def discover_defined_entry_points(package_path: Path) -> list[str]:
+    """Return entry point modules defined in a local pyproject.toml."""
+    pyproject = package_path / "pyproject.toml"
+    if not pyproject.exists():
+        pyproject = package_path.parent / "pyproject.toml"
+    entries = []
+    if pyproject.exists():
+        try:
+            data = tomllib.loads(pyproject.read_text())
+            scripts = data.get("project", {}).get("scripts", {})
+            for target in scripts.values():
+                mod = str(target).split(":", 1)[0]
+                entries.append(mod)
+        except Exception:
+            pass
+    return entries
 
 __version__ = "0.5.4"
 
@@ -85,6 +107,10 @@ def main(argv=sys.argv):
     args = docopt(USAGE, argv=argv[1:], version=__version__)
     if args['--no-cli'] and args['--main-from']:
         raise CLIOptionError("cannot specify both --no-cli and --main-from")
+
+    entries = args.get('--entry') or []
+    if not isinstance(entries, list):
+        entries = [entries] if entries else []
     
     ctx = FlatteningContext(
         package_path=args['<input>'],
@@ -97,7 +123,11 @@ def main(argv=sys.argv):
         exclude=args.get('--exclude', '').split(',') if args.get('--exclude') else [],
         include=args.get('--include', '').split(',') if args.get('--include') else [],
         shebang=args.get('--shebang', '#!/usr/bin/env python3'),
+        entry_points=entries,
     )
+
+    if not ctx.entry_points:
+        ctx.entry_points = discover_defined_entry_points(Path(ctx.package_path))
 
     ctx.main_from = ctx.main_from[0] if ctx.main_from else None
     if ctx.main_from:
@@ -108,20 +138,55 @@ def main(argv=sys.argv):
         print(f"CLI args:\n{ctx}")
         return 0
 
-    ctx.discover_modules()
-    ctx.gather_main_guard_spans()
-    spans = ctx.get_final_output_spans()
+    entry_mods = ctx.entry_points or ([ctx.main_from] if ctx.main_from else [])
+    if not entry_mods:
+        entry_mods = [None]
 
-    lines = []
-    if ctx.shebang:
-        lines.append(ctx.shebang.rstrip("\n") + "\n")
-    lines.extend(span.text for span in spans)
-    text = "".join(lines)
-
-    if ctx.output == "stdout":
-        sys.stdout.write(text)
+    output_path = ctx.output
+    if len(entry_mods) > 1 and output_path != "stdout":
+        out_dir = Path(output_path)
+        out_dir.mkdir(parents=True, exist_ok=True)
     else:
-        Path(ctx.output).write_text(text)
+        out_dir = None
+
+    for mod in entry_mods:
+        sub_ctx = FlatteningContext(
+            package_path=ctx.package_path,
+            output=output_path,
+            no_cli=ctx.no_cli,
+            main_from=[mod] if mod else [],
+            guards_all=ctx.guards_all,
+            guards_from=ctx.guards_from,
+            ignore_clashes=ctx.ignore_clashes,
+            exclude=ctx.exclude,
+            include=ctx.include,
+            shebang=ctx.shebang,
+        )
+
+        sub_ctx.main_from = sub_ctx.main_from[0] if sub_ctx.main_from else None
+        if sub_ctx.main_from:
+            sub_ctx.no_cli = False
+        elif not sub_ctx.no_cli:
+            sub_ctx.main_from = "__main__"
+
+        sub_ctx.discover_modules()
+        sub_ctx.gather_main_guard_spans()
+        spans = sub_ctx.get_final_output_spans()
+
+        lines = []
+        if sub_ctx.shebang:
+            lines.append(sub_ctx.shebang.rstrip("\n") + "\n")
+        lines.extend(span.text for span in spans)
+        text = "".join(lines)
+
+        if sub_ctx.output == "stdout":
+            sys.stdout.write(text)
+        else:
+            if out_dir:
+                fname = mod or "output"
+                Path(out_dir / f"{fname}.py").write_text(text)
+            else:
+                Path(sub_ctx.output).write_text(text)
 
     return 0
 
