@@ -2,6 +2,7 @@
 
 import ast
 from typing import List, Union
+
 from .vendor.pathlib import Path
 
 class Span:
