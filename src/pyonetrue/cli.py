@@ -61,11 +61,11 @@ Options:
 """
 
 import sys
-from pathlib import Path
 
-from .vendor.docopt import docopt
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
+from .vendor.docopt import docopt
+from .vendor.pathlib import Path
 
 __version__ = "0.5.4"
 
