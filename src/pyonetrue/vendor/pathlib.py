@@ -7,7 +7,10 @@ import posixpath
 import re
 import sys
 import time
-from collections import Sequence
+try:
+    from collections.abc import Sequence
+except ImportError:  # pragma: no cover - for older Python
+    from collections import Sequence
 from contextlib import contextmanager
 from errno import EINVAL, ENOENT
 from operator import attrgetter
@@ -1056,6 +1059,29 @@ class Path(PurePath):
                            opener=self._opener)
         else:
             return io.open(str(self), mode, buffering, encoding, errors, newline)
+
+    def read_bytes(self):
+        """Open the file in bytes mode, read it, and close the file."""
+        with self.open(mode='rb') as f:
+            return f.read()
+
+    def read_text(self, encoding=None, errors=None):
+        """Open the file in text mode, read it, and close the file."""
+        with self.open(mode='r', encoding=encoding, errors=errors) as f:
+            return f.read()
+
+    def write_bytes(self, data):
+        """Open the file in bytes mode, write to it, and close the file."""
+        view = memoryview(data)
+        with self.open(mode='wb') as f:
+            return f.write(view)
+
+    def write_text(self, data, encoding=None, errors=None, newline=None):
+        """Open the file in text mode, write to it, and close the file."""
+        if not isinstance(data, str):
+            raise TypeError('data must be str, not %s' % data.__class__.__name__)
+        with self.open(mode='w', encoding=encoding, errors=errors, newline=newline) as f:
+            return f.write(data)
 
     def touch(self, mode=0o666, exist_ok=True):
         """
