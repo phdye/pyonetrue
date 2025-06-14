@@ -1,5 +1,5 @@
 import pytest
-from pathlib import Path
+from pyonetrue.vendor.pathlib import Path
 
 import textwrap
 

@@ -1,6 +1,6 @@
 import sys
 import subprocess
-from pathlib import Path
+from pyonetrue.vendor.pathlib import Path
 import pytest
 
 import io
