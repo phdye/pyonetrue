@@ -71,7 +71,7 @@ from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
 
-__version__ = "0.5.4"
+__version__ = "0.6.7"
 
 def main(argv=sys.argv):
     """Main entry point for the CLI tool.
