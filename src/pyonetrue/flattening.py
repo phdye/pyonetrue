@@ -39,6 +39,7 @@ class FlatteningContext:
     shebang            : str                           = "#!/usr/bin/env python3"
     guards_all         : bool                          = False
     guards_from        : List[str]                     = field(default_factory=list)
+    entry_funcs        : List[str]                     = field(default_factory=list)
 
     def __post_init__(self):
         if not self.package_path:

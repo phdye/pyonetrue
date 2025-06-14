@@ -83,3 +83,16 @@ def test_cli_exclude_include(tmp_path):
     assert "BBB" in result.stdout
     assert "CCC" in result.stdout
 
+
+def test_cli_entry_option(tmp_path):
+    pkg = tmp_path / "pkg"
+    pkg.mkdir()
+    (pkg / "__init__.py").write_text("")
+    (pkg / "__main__.py").write_text('print("IGNORED")')
+    (pkg / "cli.py").write_text('def main():\n    print("CLI")\n')
+
+    result = run_cli(["--entry", "pkg.cli:main", str(pkg)])
+    assert "IGNORED" not in result.stdout
+    assert "def main" in result.stdout
+    assert "if __name__" in result.stdout
+
