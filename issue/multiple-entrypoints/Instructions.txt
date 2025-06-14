@@ -1,0 +1,7 @@
+pyonetrue needs to be able to handle various styles of packages that have multiple entry points or provide separate scripts.  The name of the entry point with or without ".main" or other function should result in a single module program containing the necessary elements for that program.
+
+Two example repos that are git submodules:
+    issue/multiple-entrypoints/logtool
+    issue/multiple-entrypoints/dlocate
+
+How would you recommend we achieve this?  Are there other common entrypoint styles we should support?

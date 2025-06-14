@@ -1,0 +1,3 @@
+[submodule "issue/multiple-entrypoints/dlocate"]
+	path = issue/multiple-entrypoints/dlocate
+	url = git@github.com:phdye/dlocate
