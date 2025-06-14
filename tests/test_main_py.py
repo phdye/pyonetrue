@@ -3,7 +3,7 @@ import os
 import io
 import contextlib
 import pytest
-from pathlib import Path
+from pyonetrue.vendor.pathlib import Path
 from pyonetrue import main
 from pyonetrue import FlatteningContext
 from pyonetrue import extract_spans, Span

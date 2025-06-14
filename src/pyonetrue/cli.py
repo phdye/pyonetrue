@@ -57,7 +57,7 @@ Options:
 """
 
 import sys
-from pathlib import Path
+from .vendor.pathlib import Path
 
 from .vendor.docopt import docopt
 from .flattening import FlatteningContext

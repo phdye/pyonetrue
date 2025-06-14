@@ -2,7 +2,7 @@
 
 import ast
 from typing import List, Union
-from pathlib import Path
+from .vendor.pathlib import Path
 
 class Span:
     """Represents a contiguous block of top-level code in the source file.
