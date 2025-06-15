@@ -1,6 +1,6 @@
 # 📘 `pyonetrue` User Guide
 
-Version: **0.5.3**
+Version: **0.5.4**
 Status: **Stable, syntax-only**
 
 ---
