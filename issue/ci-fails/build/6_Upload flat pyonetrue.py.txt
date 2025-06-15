@@ -1,0 +1,27 @@
+﻿2025-06-15T10:37:39.0682020Z ##[group]Run actions/upload-artifact@v4
+2025-06-15T10:37:39.0682287Z with:
+2025-06-15T10:37:39.0682461Z   name: flat-pyonetrue
+2025-06-15T10:37:39.0682660Z   path: flat/pyonetrue.py
+2025-06-15T10:37:39.0682872Z   if-no-files-found: warn
+2025-06-15T10:37:39.0683067Z   compression-level: 6
+2025-06-15T10:37:39.0683254Z   overwrite: false
+2025-06-15T10:37:39.0683435Z   include-hidden-files: false
+2025-06-15T10:37:39.0683640Z env:
+2025-06-15T10:37:39.0683861Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:39.0684258Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.18/x64/lib/pkgconfig
+2025-06-15T10:37:39.0684629Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:39.0684956Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:39.0685289Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:39.0685617Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.18/x64/lib
+2025-06-15T10:37:39.0685896Z ##[endgroup]
+2025-06-15T10:37:39.2894639Z With the provided path, there will be 1 file uploaded
+2025-06-15T10:37:39.2899335Z Artifact name is valid!
+2025-06-15T10:37:39.2900780Z Root directory input is valid!
+2025-06-15T10:37:39.5720399Z Beginning upload of artifact content to blob storage
+2025-06-15T10:37:39.9243720Z Uploaded bytes 24309
+2025-06-15T10:37:39.9977815Z Finished uploading artifact content to blob storage!
+2025-06-15T10:37:39.9981432Z SHA256 digest of uploaded artifact zip is 13cd5f2eabc7a84b6e27b2303429c0163f1afdb962920a9b5fee7fbbebffe2e1
+2025-06-15T10:37:39.9991075Z Finalizing artifact upload
+2025-06-15T10:37:40.1271108Z Artifact flat-pyonetrue.zip successfully finalized. Artifact ID 3330695876
+2025-06-15T10:37:40.1272368Z Artifact flat-pyonetrue has been successfully uploaded! Final size is 24309 bytes. Artifact ID is 3330695876
+2025-06-15T10:37:40.1273653Z Artifact download URL: https://github.com/phdye/pyonetrue/actions/runs/15662295386/artifacts/3330695876

@@ -1,0 +1,184 @@
+﻿2025-06-15T10:37:32.5616302Z ##[group]Run actions/checkout@v3
+2025-06-15T10:37:32.5617121Z with:
+2025-06-15T10:37:32.5617540Z   repository: phdye/pyonetrue
+2025-06-15T10:37:32.5618167Z   token: ***
+2025-06-15T10:37:32.5618548Z   ssh-strict: true
+2025-06-15T10:37:32.5618962Z   persist-credentials: true
+2025-06-15T10:37:32.5619575Z   clean: true
+2025-06-15T10:37:32.5619986Z   sparse-checkout-cone-mode: true
+2025-06-15T10:37:32.5620461Z   fetch-depth: 1
+2025-06-15T10:37:32.5620843Z   fetch-tags: false
+2025-06-15T10:37:32.5621229Z   lfs: false
+2025-06-15T10:37:32.5621609Z   submodules: false
+2025-06-15T10:37:32.5622011Z   set-safe-directory: true
+2025-06-15T10:37:32.5622682Z ##[endgroup]
+2025-06-15T10:37:32.7802053Z Syncing repository: phdye/pyonetrue
+2025-06-15T10:37:32.7803709Z ##[group]Getting Git version info
+2025-06-15T10:37:32.7804424Z Working directory is '/home/runner/work/pyonetrue/pyonetrue'
+2025-06-15T10:37:32.7805361Z [command]/usr/bin/git version
+2025-06-15T10:37:32.7897324Z git version 2.49.0
+2025-06-15T10:37:32.7927342Z ##[endgroup]
+2025-06-15T10:37:32.7944018Z Temporarily overriding HOME='/home/runner/work/_temp/80c10148-b1f1-4ee5-b419-38eeebb29588' before making global git config changes
+2025-06-15T10:37:32.7945393Z Adding repository directory to the temporary git global config as a safe directory
+2025-06-15T10:37:32.7947326Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/pyonetrue/pyonetrue
+2025-06-15T10:37:32.7981387Z Deleting the contents of '/home/runner/work/pyonetrue/pyonetrue'
+2025-06-15T10:37:32.7984975Z ##[group]Initializing the repository
+2025-06-15T10:37:32.7987954Z [command]/usr/bin/git init /home/runner/work/pyonetrue/pyonetrue
+2025-06-15T10:37:32.8053000Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-06-15T10:37:32.8054514Z hint: is subject to change. To configure the initial branch name to use in all
+2025-06-15T10:37:32.8055892Z hint: of your new repositories, which will suppress this warning, call:
+2025-06-15T10:37:32.8056571Z hint:
+2025-06-15T10:37:32.8057065Z hint: 	git config --global init.defaultBranch <name>
+2025-06-15T10:37:32.8057624Z hint:
+2025-06-15T10:37:32.8058153Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-06-15T10:37:32.8059008Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-06-15T10:37:32.8059876Z hint:
+2025-06-15T10:37:32.8060261Z hint: 	git branch -m <name>
+2025-06-15T10:37:32.8063391Z Initialized empty Git repository in /home/runner/work/pyonetrue/pyonetrue/.git/
+2025-06-15T10:37:32.8073381Z [command]/usr/bin/git remote add origin https://github.com/phdye/pyonetrue
+2025-06-15T10:37:32.8108117Z ##[endgroup]
+2025-06-15T10:37:32.8108842Z ##[group]Disabling automatic garbage collection
+2025-06-15T10:37:32.8111117Z [command]/usr/bin/git config --local gc.auto 0
+2025-06-15T10:37:32.8136881Z ##[endgroup]
+2025-06-15T10:37:32.8137560Z ##[group]Setting up auth
+2025-06-15T10:37:32.8142180Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-06-15T10:37:32.8167755Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-06-15T10:37:32.8499679Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-06-15T10:37:32.8526607Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-06-15T10:37:32.8738434Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-06-15T10:37:32.8770523Z ##[endgroup]
+2025-06-15T10:37:32.8771762Z ##[group]Fetching the repository
+2025-06-15T10:37:32.8779618Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +7c8c2feea04bf4c813bbe0ba35a8774442f26d93:refs/remotes/origin/main
+2025-06-15T10:37:33.4152422Z remote: Enumerating objects: 61, done.        
+2025-06-15T10:37:33.4153960Z remote: Counting objects:   1% (1/61)        
+2025-06-15T10:37:33.4154629Z remote: Counting objects:   3% (2/61)        
+2025-06-15T10:37:33.4155315Z remote: Counting objects:   4% (3/61)        
+2025-06-15T10:37:33.4155957Z remote: Counting objects:   6% (4/61)        
+2025-06-15T10:37:33.4156604Z remote: Counting objects:   8% (5/61)        
+2025-06-15T10:37:33.4157230Z remote: Counting objects:   9% (6/61)        
+2025-06-15T10:37:33.4157911Z remote: Counting objects:  11% (7/61)        
+2025-06-15T10:37:33.4158551Z remote: Counting objects:  13% (8/61)        
+2025-06-15T10:37:33.4159336Z remote: Counting objects:  14% (9/61)        
+2025-06-15T10:37:33.4159996Z remote: Counting objects:  16% (10/61)        
+2025-06-15T10:37:33.4160639Z remote: Counting objects:  18% (11/61)        
+2025-06-15T10:37:33.4161290Z remote: Counting objects:  19% (12/61)        
+2025-06-15T10:37:33.4161974Z remote: Counting objects:  21% (13/61)        
+2025-06-15T10:37:33.4162649Z remote: Counting objects:  22% (14/61)        
+2025-06-15T10:37:33.4163316Z remote: Counting objects:  24% (15/61)        
+2025-06-15T10:37:33.4163955Z remote: Counting objects:  26% (16/61)        
+2025-06-15T10:37:33.4164555Z remote: Counting objects:  27% (17/61)        
+2025-06-15T10:37:33.4165136Z remote: Counting objects:  29% (18/61)        
+2025-06-15T10:37:33.4165733Z remote: Counting objects:  31% (19/61)        
+2025-06-15T10:37:33.4166426Z remote: Counting objects:  32% (20/61)        
+2025-06-15T10:37:33.4167264Z remote: Counting objects:  34% (21/61)        
+2025-06-15T10:37:33.4167873Z remote: Counting objects:  36% (22/61)        
+2025-06-15T10:37:33.4168479Z remote: Counting objects:  37% (23/61)        
+2025-06-15T10:37:33.4169214Z remote: Counting objects:  39% (24/61)        
+2025-06-15T10:37:33.4169820Z remote: Counting objects:  40% (25/61)        
+2025-06-15T10:37:33.4170433Z remote: Counting objects:  42% (26/61)        
+2025-06-15T10:37:33.4171029Z remote: Counting objects:  44% (27/61)        
+2025-06-15T10:37:33.4171617Z remote: Counting objects:  45% (28/61)        
+2025-06-15T10:37:33.4172267Z remote: Counting objects:  47% (29/61)        
+2025-06-15T10:37:33.4172883Z remote: Counting objects:  49% (30/61)        
+2025-06-15T10:37:33.4173518Z remote: Counting objects:  50% (31/61)        
+2025-06-15T10:37:33.4174099Z remote: Counting objects:  52% (32/61)        
+2025-06-15T10:37:33.4174687Z remote: Counting objects:  54% (33/61)        
+2025-06-15T10:37:33.4175272Z remote: Counting objects:  55% (34/61)        
+2025-06-15T10:37:33.4175853Z remote: Counting objects:  57% (35/61)        
+2025-06-15T10:37:33.4176428Z remote: Counting objects:  59% (36/61)        
+2025-06-15T10:37:33.4177011Z remote: Counting objects:  60% (37/61)        
+2025-06-15T10:37:33.4177593Z remote: Counting objects:  62% (38/61)        
+2025-06-15T10:37:33.4178164Z remote: Counting objects:  63% (39/61)        
+2025-06-15T10:37:33.4179003Z remote: Counting objects:  65% (40/61)        
+2025-06-15T10:37:33.4180337Z remote: Counting objects:  67% (41/61)        
+2025-06-15T10:37:33.4181388Z remote: Counting objects:  68% (42/61)        
+2025-06-15T10:37:33.4182083Z remote: Counting objects:  70% (43/61)        
+2025-06-15T10:37:33.4182688Z remote: Counting objects:  72% (44/61)        
+2025-06-15T10:37:33.4183281Z remote: Counting objects:  73% (45/61)        
+2025-06-15T10:37:33.4183867Z remote: Counting objects:  75% (46/61)        
+2025-06-15T10:37:33.4184463Z remote: Counting objects:  77% (47/61)        
+2025-06-15T10:37:33.4185074Z remote: Counting objects:  78% (48/61)        
+2025-06-15T10:37:33.4185665Z remote: Counting objects:  80% (49/61)        
+2025-06-15T10:37:33.4186240Z remote: Counting objects:  81% (50/61)        
+2025-06-15T10:37:33.4186828Z remote: Counting objects:  83% (51/61)        
+2025-06-15T10:37:33.4187408Z remote: Counting objects:  85% (52/61)        
+2025-06-15T10:37:33.4187988Z remote: Counting objects:  86% (53/61)        
+2025-06-15T10:37:33.4188818Z remote: Counting objects:  88% (54/61)        
+2025-06-15T10:37:33.4189650Z remote: Counting objects:  90% (55/61)        
+2025-06-15T10:37:33.4190254Z remote: Counting objects:  91% (56/61)        
+2025-06-15T10:37:33.4190843Z remote: Counting objects:  93% (57/61)        
+2025-06-15T10:37:33.4191433Z remote: Counting objects:  95% (58/61)        
+2025-06-15T10:37:33.4192007Z remote: Counting objects:  96% (59/61)        
+2025-06-15T10:37:33.4192591Z remote: Counting objects:  98% (60/61)        
+2025-06-15T10:37:33.4193195Z remote: Counting objects: 100% (61/61)        
+2025-06-15T10:37:33.4193814Z remote: Counting objects: 100% (61/61), done.        
+2025-06-15T10:37:33.4194462Z remote: Compressing objects:   1% (1/56)        
+2025-06-15T10:37:33.4195075Z remote: Compressing objects:   3% (2/56)        
+2025-06-15T10:37:33.4195700Z remote: Compressing objects:   5% (3/56)        
+2025-06-15T10:37:33.4196312Z remote: Compressing objects:   7% (4/56)        
+2025-06-15T10:37:33.4196973Z remote: Compressing objects:   8% (5/56)        
+2025-06-15T10:37:33.4197577Z remote: Compressing objects:  10% (6/56)        
+2025-06-15T10:37:33.4198177Z remote: Compressing objects:  12% (7/56)        
+2025-06-15T10:37:33.4198784Z remote: Compressing objects:  14% (8/56)        
+2025-06-15T10:37:33.4199539Z remote: Compressing objects:  16% (9/56)        
+2025-06-15T10:37:33.4200153Z remote: Compressing objects:  17% (10/56)        
+2025-06-15T10:37:33.4200770Z remote: Compressing objects:  19% (11/56)        
+2025-06-15T10:37:33.4201538Z remote: Compressing objects:  21% (12/56)        
+2025-06-15T10:37:33.4202155Z remote: Compressing objects:  23% (13/56)        
+2025-06-15T10:37:33.4202758Z remote: Compressing objects:  25% (14/56)        
+2025-06-15T10:37:33.4203373Z remote: Compressing objects:  26% (15/56)        
+2025-06-15T10:37:33.4203981Z remote: Compressing objects:  28% (16/56)        
+2025-06-15T10:37:33.4204600Z remote: Compressing objects:  30% (17/56)        
+2025-06-15T10:37:33.4205233Z remote: Compressing objects:  32% (18/56)        
+2025-06-15T10:37:33.4205844Z remote: Compressing objects:  33% (19/56)        
+2025-06-15T10:37:33.4206462Z remote: Compressing objects:  35% (20/56)        
+2025-06-15T10:37:33.4207071Z remote: Compressing objects:  37% (21/56)        
+2025-06-15T10:37:33.4207943Z remote: Compressing objects:  39% (22/56)        
+2025-06-15T10:37:33.4209297Z remote: Compressing objects:  41% (23/56)        
+2025-06-15T10:37:33.4210280Z remote: Compressing objects:  42% (24/56)        
+2025-06-15T10:37:33.4211260Z remote: Compressing objects:  44% (25/56)        
+2025-06-15T10:37:33.4212120Z remote: Compressing objects:  46% (26/56)        
+2025-06-15T10:37:33.4212781Z remote: Compressing objects:  48% (27/56)        
+2025-06-15T10:37:33.4213391Z remote: Compressing objects:  50% (28/56)        
+2025-06-15T10:37:33.4214018Z remote: Compressing objects:  51% (29/56)        
+2025-06-15T10:37:33.4214619Z remote: Compressing objects:  53% (30/56)        
+2025-06-15T10:37:33.4215248Z remote: Compressing objects:  55% (31/56)        
+2025-06-15T10:37:33.4215861Z remote: Compressing objects:  57% (32/56)        
+2025-06-15T10:37:33.4216466Z remote: Compressing objects:  58% (33/56)        
+2025-06-15T10:37:33.4217072Z remote: Compressing objects:  60% (34/56)        
+2025-06-15T10:37:33.4218012Z remote: Compressing objects:  62% (35/56)        
+2025-06-15T10:37:33.4218883Z remote: Compressing objects:  64% (36/56)        
+2025-06-15T10:37:33.4220036Z remote: Compressing objects:  66% (37/56)        
+2025-06-15T10:37:33.4220688Z remote: Compressing objects:  67% (38/56)        
+2025-06-15T10:37:33.4221295Z remote: Compressing objects:  69% (39/56)        
+2025-06-15T10:37:33.4221909Z remote: Compressing objects:  71% (40/56)        
+2025-06-15T10:37:33.4222516Z remote: Compressing objects:  73% (41/56)        
+2025-06-15T10:37:33.4223118Z remote: Compressing objects:  75% (42/56)        
+2025-06-15T10:37:33.4223726Z remote: Compressing objects:  76% (43/56)        
+2025-06-15T10:37:33.4224517Z remote: Compressing objects:  78% (44/56)        
+2025-06-15T10:37:33.4225130Z remote: Compressing objects:  80% (45/56)        
+2025-06-15T10:37:33.4225738Z remote: Compressing objects:  82% (46/56)        
+2025-06-15T10:37:33.4226350Z remote: Compressing objects:  83% (47/56)        
+2025-06-15T10:37:33.4226960Z remote: Compressing objects:  85% (48/56)        
+2025-06-15T10:37:33.4227558Z remote: Compressing objects:  87% (49/56)        
+2025-06-15T10:37:33.4228169Z remote: Compressing objects:  89% (50/56)        
+2025-06-15T10:37:33.4228810Z remote: Compressing objects:  91% (51/56)        
+2025-06-15T10:37:33.4229586Z remote: Compressing objects:  92% (52/56)        
+2025-06-15T10:37:33.4230222Z remote: Compressing objects:  94% (53/56)        
+2025-06-15T10:37:33.4230858Z remote: Compressing objects:  96% (54/56)        
+2025-06-15T10:37:33.4231477Z remote: Compressing objects:  98% (55/56)        
+2025-06-15T10:37:33.4232087Z remote: Compressing objects: 100% (56/56)        
+2025-06-15T10:37:33.4232751Z remote: Compressing objects: 100% (56/56), done.        
+2025-06-15T10:37:33.4594868Z remote: Total 61 (delta 3), reused 22 (delta 0), pack-reused 0 (from 0)        
+2025-06-15T10:37:33.4678445Z From https://github.com/phdye/pyonetrue
+2025-06-15T10:37:33.4682519Z  * [new ref]         7c8c2feea04bf4c813bbe0ba35a8774442f26d93 -> origin/main
+2025-06-15T10:37:33.4721409Z ##[endgroup]
+2025-06-15T10:37:33.4723555Z ##[group]Determining the checkout info
+2025-06-15T10:37:33.4725188Z ##[endgroup]
+2025-06-15T10:37:33.4727109Z ##[group]Checking out the ref
+2025-06-15T10:37:33.4728818Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-06-15T10:37:33.4819261Z Switched to a new branch 'main'
+2025-06-15T10:37:33.4822168Z branch 'main' set up to track 'origin/main'.
+2025-06-15T10:37:33.4829448Z ##[endgroup]
+2025-06-15T10:37:33.4867678Z [command]/usr/bin/git log -1 --format='%H'
+2025-06-15T10:37:33.4891551Z '7c8c2feea04bf4c813bbe0ba35a8774442f26d93'
