@@ -15,7 +15,7 @@ class CLIOptionError(PyonetrueError):
     """Raised when invalid or incompatible command-line options are provided to the CLI.
 
     Use this exception to signal errors such as specifying mutually exclusive flags
-    (e.g., `--no-cli` and `--main-from`).
+    (e.g., `--module-only` and `--main-from`).
     """
     """TODO: Expand this docstring."""
     """TODO: Expand this docstring."""

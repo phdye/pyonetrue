@@ -21,7 +21,7 @@ def test_round_trip_flatten_and_run_tests():
     print(f"\n*** Flattening to: {output_file}")
 
     result = subprocess.run([
-        "scripts/runner", "src/pyonetrue", "--no-cli", "--output", str(output_file),
+        "scripts/runner", "src/pyonetrue", "--module-only", "--output", str(output_file),
     ], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     assert result.returncode == 0, f"Flattening failed:\n{result.stdout}"
 
