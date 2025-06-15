@@ -1,21 +1,24 @@
-Redistribution and use of the pyonetrue software, in source and binary forms, with or without modification, are permitted for non-commercial purposes only, provided that the following conditions are met:
+Custom License (Philip Dye)
+SPDX-License-Identifier: LicenseRef-PhilipDye-NC
 
-1. **Non-Commercial Use Only**
-   - The Software may be used, modified, and distributed only for non-commercial purposes.
-   - Commercial use, including offering the Software as part of a paid service or product, is prohibited without prior written permission from the copyright holder.
+Copyright (c) 2025 Philip Dye
 
-2. **Attribution Required**
-   - Redistributions of the Software must retain this license and provide attribution to the original author.
+Permission is granted to use, modify, and distribute this software for non-commercial purposes only, provided that the following conditions are met:
 
-3. **No Warranty**
-   - The Software is provided "as is", without warranty of any kind, express or implied.
+1. **Non-Commercial Use Only**  
+   The Software may be used, modified, and distributed only for non-commercial purposes.  
+   Commercial use — including offering the Software as part of a paid service, software-as-a-service (SaaS) product, or commercial distribution — is prohibited without prior written permission from the copyright holder.
 
-4. **Preservation of Notice**
-   - Any derivative works or redistributions must include this license in its entirety.
+2. **Disclaimer of Warranty**  
+   The software is provided "as is", without warranty of any kind.
 
-5. **Optional Dual Licensing**
-   - The author reserves the right to relicense the Software, including offering it under commercial terms at a future date.
+3. **Limitation of Liability**  
+   The author shall not be liable for any damages arising from the use or inability to use the Software.
 
----
+4. **Preservation of License**  
+   Any redistribution must include this license in full. Derivative works must clearly indicate changes and retain this license unless explicitly granted an alternative license by the copyright holder.
 
-Copyright (c) 2024–2025 Philip H. Dye. All rights reserved.
+5. **Optional Dual Licensing**  
+   The author reserves the right to offer the Software under alternative or commercial licensing terms at any time. Contact the author for inquiries regarding commercial use or paid licensing.
+
+END OF TERMS
