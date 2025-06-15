@@ -42,12 +42,16 @@ Options:
   -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
   -o, --output <file>      Write output to file (default: stdout).
   --no-cli                 Do not include package's __main__.py.
+  -e, --entry <entry>      Specify entry function as module[:func].  If repeated,
+                           produces multiple single module programs. If no entry is
+                           specified, the module's __main__ guard will be used. If 
+                           --no-cli is specified, this option is ignored.
   -m, --main-from <mod>    Include __main__.py from the specified sub-package.
                            Only one __main__.py module is allowed.
                            Incompatible with --no-cli.
   -a, --all-guards         Include all __main__ guards. (default: discard)
   -g, --guards-from <mod>  Include __main__ guards only from <mod>.
-  -e, --exclude <exclude>  Exclude specified packages or modules, comma separated.
+  -E, --exclude <exclude>  Exclude specified packages or modules, comma separated.
   -i, --include <include>  Exclude specified packages or modules, comma separated.
   --entry <entry>          Explicitly build for the given entry point. May be
                            repeated. If omitted, all defined entry points are
@@ -60,13 +64,22 @@ Options:
 """
 
 import sys
-from pathlib import Path
-import tomllib
 
-from .vendor.docopt import docopt
+try:
+    import tomllib
+except ImportError:
+    import tomli as tomllib  # For Python 3.11 and earlier
+
+try :
+    from pathlib import Path
+except ImportError:
+    from .vendor.pathlib import Path
+
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
+from .vendor.docopt import docopt
 
+__version__ = "0.6.8"
 
 def discover_defined_entry_points(package_path: Path) -> list[str]:
     """Return entry point modules defined in a local pyproject.toml."""
@@ -112,6 +125,20 @@ def main(argv=sys.argv):
     if not isinstance(entries, list):
         entries = [entries] if entries else []
     
+    entries = args.get('--entry')
+    if entries and not isinstance(entries, list):
+        entries = [entries]
+    parsed_funcs = []
+    for ent in entries or []:
+        if ':' in ent:
+            ent = ent.rsplit(':', 1)[1]
+        elif '.' in ent:
+            ent = ent.split('.')[-1]
+        elif ent:
+            ent = ent
+        else:
+            continue
+        parsed_funcs.append(ent)
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
@@ -130,7 +157,10 @@ def main(argv=sys.argv):
         ctx.entry_points = discover_defined_entry_points(Path(ctx.package_path))
 
     ctx.main_from = ctx.main_from[0] if ctx.main_from else None
-    if ctx.main_from:
+    if ctx.entry_funcs:
+        ctx.no_cli = True
+        ctx.main_from = None
+    elif ctx.main_from:
         ctx.no_cli = False
     elif not ctx.no_cli:
         ctx.main_from = '__main__' # primary package
