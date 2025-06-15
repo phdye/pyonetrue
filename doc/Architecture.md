@@ -1,5 +1,8 @@
 # Architecture Overview
 
+Version: **0.8.0**
+Status: **Draft**
+
 This document outlines the high-level design of **pyonetrue**. It focuses on the major components, their responsibilities, and how they interact when flattening Python packages into a single module.
 
 ## Major Components
@@ -39,12 +42,14 @@ This document outlines the high-level design of **pyonetrue**. It focuses on the
 
 1. **CLI Invocation** – The user runs `pyonetrue` with an input package or module and optional flags.
 2. **Context Construction** – `cli.main` creates a `FlatteningContext` and resolves which entry points or main modules should be built.
-3. **Module Discovery** – The context scans the package path and forms `FlatteningModule` objects for each `.py` file that matches the include/exclude filters.
+3. **Module Discovery** – The context iterates over `sorted(path.rglob('*.py'))` so builds on every platform discover modules in the same order, forming `FlatteningModule` objects for each path that matches the include/exclude filters.
 4. **Span Extraction** – Each module is parsed by `extract_spans`, producing ordered spans that describe imports, definitions, main guards, and other top‑level code.
 5. **Main Guard Collection** – Depending on `--all-guards` and `--guards-from`, guard spans are aggregated for inclusion in the final output.
 6. **Import Normalization** – All gathered imports are processed by `normalize_imports` to eliminate duplicates and sort them deterministically.
-7. **Assembly & Clash Checking** – The context orders docstrings, imports, class/function definitions, logic, guard blocks, and optional `__main__.py` content. Name clashes raise `DuplicateNameError` unless ignored.
-8. **Output Generation** – The assembled spans are written to stdout or the path specified by `--output`. When multiple entry points are built, files are placed under the given output directory.
+7. **Dependency Ordering** – Modules are topologically sorted based on their import relationships so referenced symbols appear after their definitions. A CLI flag lets users supply a custom order when necessary.
+8. **Assembly & Clash Checking** – The context orders docstrings, imports, class/function definitions, logic, guard blocks, and optional `__main__.py` content. Name clashes raise `DuplicateNameError` unless ignored.
+9. **Post-build Validation** – The flattened output is compiled with `py_compile` or imported to fail fast if any symbol is undefined.
+10. **Output Generation** – The assembled spans are written to stdout or the path specified by `--output`. When multiple entry points are built, files are placed under the given output directory.
 
 ## Data Flow
 
@@ -53,6 +58,15 @@ The pipeline converts each source file into a list of `Span` objects. These span
 ## Extensibility
 
 The modular separation between CLI, context management, AST extraction, and import normalization allows future features such as plugin-based import handlers or additional analysis passes. Each component exposes clear responsibilities, keeping the flattening logic independent from command parsing and user interface concerns.
+
+## Determinism and Validation (v0.8.0)
+
+Version 0.8.0 incorporates recommendations from the CI failure analysis to guarantee reproducible builds:
+
+* Module discovery always iterates over paths in sorted order.
+* Modules are topologically sorted by dependencies, with an optional CLI flag for custom ordering.
+* After assembly, the flattened module is compiled or imported to catch undefined symbols early.
+* Tests include packages with cross-module references to assert deterministic output across platforms.
 
 ## Rationale
 
