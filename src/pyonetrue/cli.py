@@ -123,6 +123,7 @@ def main(argv=sys.argv):
     if entries and not isinstance(entries, list):
         entries = [entries]
     parsed_funcs = []
+
     for ent in entries or []:
         if ':' in ent:
             ent = ent.rsplit(':', 1)[1]
@@ -133,6 +134,7 @@ def main(argv=sys.argv):
         else:
             continue
         parsed_funcs.append(ent)
+
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
