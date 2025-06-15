@@ -1,6 +1,6 @@
 NAME           := pyonetrue
 PROJECT        := $${PWD\#\#*/}
-# FILES          := {Makefile,${NAME},doc/0.5,src,tests,scripts}
+# FILES          := {Makefile,${NAME},doc/0.6,src,tests,scripts}
 FILES          := {Makefile,LICENSE,*.*,src,tests,scripts}
 
 # make test n=1 t="test/*_wh*.py"

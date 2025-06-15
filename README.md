@@ -68,7 +68,7 @@ All files must be **syntactically valid Python 3.10+**. Any parse error will hal
 | `--include <mods>`    | Explicitly include additional modules          |
 | `--ignore-clashes`    | Allow duplicate top-level names                |
 
-See [`USAGE.txt`](./doc/0.5/USAGE.txt) for a full CLI specification.
+See [`USAGE.txt`](./doc/0.6/USAGE.txt) for a full CLI specification.
 
 ---
 
