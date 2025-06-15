@@ -1,0 +1,90 @@
+﻿2025-06-15T10:37:38.3541436Z ##[group]Run pytest tests
+2025-06-15T10:37:38.3541718Z [36;1mpytest tests[0m
+2025-06-15T10:37:38.3601755Z shell: /usr/bin/bash -e {0}
+2025-06-15T10:37:38.3601993Z env:
+2025-06-15T10:37:38.3602238Z   pythonLocation: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:38.3602646Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.10.18/x64/lib/pkgconfig
+2025-06-15T10:37:38.3603049Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:38.3603392Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:38.3603725Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.10.18/x64
+2025-06-15T10:37:38.3604064Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.10.18/x64/lib
+2025-06-15T10:37:38.3604337Z ##[endgroup]
+2025-06-15T10:37:38.6914580Z ============================= test session starts ==============================
+2025-06-15T10:37:38.6916485Z platform linux -- Python 3.10.18, pytest-8.4.0, pluggy-1.6.0
+2025-06-15T10:37:38.6917076Z rootdir: /home/runner/work/pyonetrue/pyonetrue
+2025-06-15T10:37:38.6917428Z configfile: pyproject.toml
+2025-06-15T10:37:38.6917645Z collected 84 items
+2025-06-15T10:37:38.6917759Z 
+2025-06-15T10:37:38.7153739Z tests/test_cli.py .......                                                [  8%]
+2025-06-15T10:37:38.7268042Z tests/test_extract_ast.py ............                                   [ 22%]
+2025-06-15T10:37:38.7877314Z tests/test_flattening.py ................................                [ 60%]
+2025-06-15T10:37:38.7893375Z tests/test_future_imports.py .                                           [ 61%]
+2025-06-15T10:37:38.8079319Z tests/test_main_py.py .......                                            [ 70%]
+2025-06-15T10:37:38.8238103Z tests/test_normalize_imports.py ......................                   [ 96%]
+2025-06-15T10:37:38.8578607Z tests/test_stress.py .                                                   [ 97%]
+2025-06-15T10:37:39.0390995Z tests/test_z_round_trip.py Fs                                            [100%]
+2025-06-15T10:37:39.0391659Z 
+2025-06-15T10:37:39.0391937Z =================================== FAILURES ===================================
+2025-06-15T10:37:39.0392804Z ____________________ test_round_trip_flatten_and_run_tests _____________________
+2025-06-15T10:37:39.0393117Z 
+2025-06-15T10:37:39.0393446Z     @pytest.mark.skipif(os.getenv("PYONETRUE_ROUND_TRIP"), reason="Never runs in round-trip mode")
+2025-06-15T10:37:39.0394164Z     @pytest.mark.skipif(not Path("scripts/runner").exists(), reason="Flattening script not present")
+2025-06-15T10:37:39.0394710Z     def test_round_trip_flatten_and_run_tests():
+2025-06-15T10:37:39.0395094Z         root = Path(__file__).resolve().parent.parent
+2025-06-15T10:37:39.0395411Z     
+2025-06-15T10:37:39.0395612Z         src_dir = root / "src"
+2025-06-15T10:37:39.0395998Z         assert src_dir.exists(), "Source directory does not exist.  Where are we?"
+2025-06-15T10:37:39.0396403Z     
+2025-06-15T10:37:39.0396595Z         flat_dir = root / "flat"
+2025-06-15T10:37:39.0396864Z         flat_dir.mkdir(exist_ok=True)
+2025-06-15T10:37:39.0397197Z         output_file = flat_dir / "pyonetrue.py"
+2025-06-15T10:37:39.0397481Z     
+2025-06-15T10:37:39.0397674Z         # Step 1: Flatten
+2025-06-15T10:37:39.0398153Z         print(f"\n*** Flattening to: {output_file}")
+2025-06-15T10:37:39.0398721Z     
+2025-06-15T10:37:39.0399266Z         result = subprocess.run([
+2025-06-15T10:37:39.0399946Z             "scripts/runner", "src/pyonetrue", "--module-only", "--output", str(output_file),
+2025-06-15T10:37:39.0400893Z         ], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+2025-06-15T10:37:39.0401767Z         assert result.returncode == 0, f"Flattening failed:\n{result.stdout}"
+2025-06-15T10:37:39.0402410Z     
+2025-06-15T10:37:39.0402761Z         # Step 2: Import flattened module
+2025-06-15T10:37:39.0403233Z         import importlib
+2025-06-15T10:37:39.0403601Z         if str(src_dir) in sys.path:
+2025-06-15T10:37:39.0403881Z             sys.path.remove(str(src_dir))
+2025-06-15T10:37:39.0404399Z         sys.path.insert(0, str(flat_dir))
+2025-06-15T10:37:39.0404755Z         sys.modules.pop("pyonetrue", None)  # Clear old module if present
+2025-06-15T10:37:39.0405134Z         importlib.invalidate_caches()
+2025-06-15T10:37:39.0405374Z     
+2025-06-15T10:37:39.0405553Z         import importlib.util
+2025-06-15T10:37:39.0405816Z         flat_path = flat_dir / "pyonetrue.py"
+2025-06-15T10:37:39.0406200Z         spec = importlib.util.spec_from_file_location("pyonetrue", flat_path)
+2025-06-15T10:37:39.0406622Z         pyonetrue = importlib.util.module_from_spec(spec)
+2025-06-15T10:37:39.0406951Z         sys.modules["pyonetrue"] = pyonetrue
+2025-06-15T10:37:39.0407240Z >       spec.loader.exec_module(pyonetrue)
+2025-06-15T10:37:39.0407429Z 
+2025-06-15T10:37:39.0407523Z tests/test_z_round_trip.py:41: 
+2025-06-15T10:37:39.0407808Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+2025-06-15T10:37:39.0408376Z <frozen importlib._bootstrap_external>:883: in exec_module
+2025-06-15T10:37:39.0408929Z     ???
+2025-06-15T10:37:39.0409573Z <frozen importlib._bootstrap>:241: in _call_with_frames_removed
+2025-06-15T10:37:39.0410166Z     ???
+2025-06-15T10:37:39.0410468Z flat/pyonetrue.py:151: in <module>
+2025-06-15T10:37:39.0410899Z     class FlatteningContext:
+2025-06-15T10:37:39.0411352Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+2025-06-15T10:37:39.0411713Z 
+2025-06-15T10:37:39.0411832Z     @dataclass
+2025-06-15T10:37:39.0412159Z     class FlatteningContext:
+2025-06-15T10:37:39.0412515Z     
+2025-06-15T10:37:39.0412825Z         package_path       : Union[Path, str]
+2025-06-15T10:37:39.0413340Z         package_name       : str                           = ""
+2025-06-15T10:37:39.0413835Z >       main_py            : tuple[str, List[Span]]        = (None, [])
+2025-06-15T10:37:39.0414137Z E       NameError: name 'Span' is not defined
+2025-06-15T10:37:39.0414305Z 
+2025-06-15T10:37:39.0414395Z flat/pyonetrue.py:155: NameError
+2025-06-15T10:37:39.0414707Z ----------------------------- Captured stdout call -----------------------------
+2025-06-15T10:37:39.0414959Z 
+2025-06-15T10:37:39.0415335Z *** Flattening to: /home/runner/work/pyonetrue/pyonetrue/flat/pyonetrue.py
+2025-06-15T10:37:39.0415715Z =========================== short test summary info ============================
+2025-06-15T10:37:39.0416298Z FAILED tests/test_z_round_trip.py::test_round_trip_flatten_and_run_tests - NameError: name 'Span' is not defined
+2025-06-15T10:37:39.0416793Z =================== 1 failed, 82 passed, 1 skipped in 0.43s ====================
+2025-06-15T10:37:39.0612994Z ##[error]Process completed with exit code 1.
