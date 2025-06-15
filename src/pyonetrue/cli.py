@@ -32,14 +32,14 @@ sub-package from which to include __main__.py.
 
 Default behavior is to :
 * All relative imports are eliminated. Flattened output is fully self-contained.
-* Main guards are discarded, but this can be changed with the --main-all
-  or --main-from options.
+* Main guards are discarded, but this can be changed with the --all-guards
+  or --guards-from options.
 * Write the output to stdout, but this can be changed with the --output
 * Name clashes, duplicate top-level names, are not allowed by default.
 * If `__main__.py` is being included, prepend shebang.
 
 Options:
-  -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
+  -s, --shebang <shebang>  Prepend <shebang> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
   -o, --output <file>      Write output to file (default: stdout).
   -M, --module-only        Build a pure module without an entry point, i.e. no
                            __main__ guard, no __main__.py, no CLI.
@@ -51,7 +51,7 @@ Options:
   -a, --all-guards         Include all __main__ guards. (default: discard)
   -g, --guards-from <mod>  Include __main__ guards only from <mod>.
   -E, --exclude <exclude>  Exclude specified packages or modules, comma separated.
-  -i, --include <include>  Exclude specified packages or modules, comma separated.
+  -i, --include <include>  Include specified packages or modules, comma separated.
   --ignore-clashes         Allow duplicate top-level names without error.
   -h, --help               Show this help message.
   --version                Show version.

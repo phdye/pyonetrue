@@ -60,15 +60,16 @@ All files must be **syntactically valid Python 3.10+**. Any parse error will hal
 | Option                | Description                                    |
 | --------------------- | ---------------------------------------------- |
 | `--output <file>`     | Write output to this file (default: stdout)    |
-| `--no-cli`            | Exclude any `__main__.py` module               |
+| `--module-only`       | Build without any `__main__.py` or CLI         |
 | `--main-from <mod>`   | Include only `mod.__main__.py`                 |
+| `--entry <entry>`     | Build specifically for the given entry point   |
 | `--all-guards`        | Include all `if __name__ == '__main__'` blocks |
 | `--guards-from <mod>` | Include only guards from given modules         |
 | `--exclude <mods>`    | Omit these modules (comma-separated)           |
 | `--include <mods>`    | Explicitly include additional modules          |
 | `--ignore-clashes`    | Allow duplicate top-level names                |
 
-See [`USAGE.txt`](./doc/0.6/USAGE.txt) for a full CLI specification.
+See [`USAGE.txt`](./doc/USAGE.txt) for a full CLI specification.
 
 ---
 

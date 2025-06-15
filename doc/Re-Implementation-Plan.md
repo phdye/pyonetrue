@@ -34,8 +34,8 @@ This plan refocuses **pyonetrue** on its compiler-like mission: _flatten valid P
 - Ensure flattened modules contain no relative (`.`) imports.
 
 1. **Flag renaming & additions**  
-   - Confirm `--omit-main` is present; remove `--module` if redundant.  
-   - Add `--main-all`, `--main-from <module>`, and `--ignore-clashes` flags.  
+   - Confirm `--module-only` is present; remove `--module` if redundant.
+   - Add `--all-guards`, `--main-from <module>`, and `--ignore-clashes` flags.
 2. **Usage & Documentation**  
    - Revise docstrings in `__main__.py` and `scripts/pyonetrue` to reflect the new AST approach and flags.  
    - Remove any mention of recovery or validation flags like `--trace` if it no longer applies.
@@ -51,7 +51,7 @@ This plan refocuses **pyonetrue** on its compiler-like mission: _flatten valid P
      - Verify imports, classes, functions, and main guards are correctly extracted
      - Ensure `ast.get_source_segment` preserves formatting for simple examples
 3. **CLI tests for flags**  
-   - Under `tests/pyonetrue/`, add tests for `--omit-main`, `--main-all`, `--main-from`, and `--ignore-clashes` behaviors.
+   - Under `tests/pyonetrue/`, add tests for `--module-only`, `--all-guards`, `--main-from`, and `--ignore-clashes` behaviors.
 4. **Regression flattening tests**  
    - Keep existing tests for `classify`, `normalize`, `reorder`, etc., but modify them to use AST spans instead of CodeSpan objects.
 
