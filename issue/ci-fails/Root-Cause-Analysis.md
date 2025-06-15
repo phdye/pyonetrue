@@ -9,7 +9,12 @@ emits modules in the discovered order, the generated `pyonetrue.py`
 can be different between CI and a developer's machine while having the
 same byte length.
 
-To guarantee deterministic output, the discovery loop should iterate
+<u>Ludicrous Proposal</u>
+
+One way to guarantee deterministic output, the discovery loop could iterate
 over `sorted(path.rglob('*.py'))` so that modules are always processed
-in lexical order regardless of platform.  This ensures identical
+in lexical order regardless of platform.  This would ensure identical
 flattened files both locally and in CI.
+
+*This would not ensure that symbols are declared before they are used.*
+
