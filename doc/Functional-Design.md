@@ -63,9 +63,19 @@ The tool is primarily executed via `pyonetrue.cli.main` or `python -m pyonetrue`
 9. **Output Generation** – The resulting spans are concatenated to produce the final module text, optionally prefixed with a shebang if `__main__.py` is included.
 
 ## Handling of Entry Points
-- By default, only the package's primary `__main__.py` is eligible for inclusion. The `--main-from` option specifies a subpackage that provides the `__main__.py` body instead. Supplying `--module-only` suppresses all entry-point logic.
+Supplying `--module-only` suppresses all default entry-point logic -- incompatible with all other entry point options.
+
+<u>No Defined Entry Points</u>
+
+- By default, only the package's primary `__main__.py` is eligible for inclusion.  
+- The `--main-from` option specifies a sub-package that provides the `__main__.py` body instead.
+- Supplying `--module-only` suppresses all default entry-point logic.
 - Guard blocks (`if __name__ == '__main__'`) are discarded unless `--all-guards` or `--guards-from` is used. Guards can be selected from specific modules or from every module in the package.
-- The `--entry` option builds a module tailored for a defined entry point from `pyproject.toml` (for example `pkg.cli:main`). Each entry is processed independently so multiple CLI wrappers can be generated in one invocation.
+
+<u>Defined Entry Points</u>
+
+- If a package has defined entry points and no other entry point options are specified, each defined entry point is generated as if the user had specified `--entry` for each one.
+- The `--entry` option builds a module tailored for a defined entry point from `pyproject.toml` (for example `pkg.cli:main`). Each entry is processed independently so multiple CLIs can be generated in one invocation.
 
 ## Import Rules
 - Relative imports (`from .foo import bar`) are removed entirely.
