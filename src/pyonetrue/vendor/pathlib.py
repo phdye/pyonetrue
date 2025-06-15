@@ -12,7 +12,7 @@ try:
 except ImportError:  # pragma: no cover - for older Python
     from collections import Sequence
 from contextlib import contextmanager
-from errno import EINVAL, ENOENT
+from errno import EINVAL, ENOENT, EEXIST
 from operator import attrgetter
 from stat import S_ISDIR, S_ISLNK, S_ISREG, S_ISSOCK, S_ISBLK, S_ISCHR, S_ISFIFO
 try:
@@ -653,6 +653,9 @@ class PurePath(object):
             raise NotImplementedError("needs Python 3.2 or later")
         return os.fsencode(str(self))
 
+    def __fspath__(self):
+        return str(self)
+
     def __repr__(self):
         return "{}({!r})".format(self.__class__.__name__, self.as_posix())
 
@@ -1105,17 +1108,26 @@ class Path(PurePath):
         fd = self._raw_open(flags, mode)
         os.close(fd)
 
-    def mkdir(self, mode=0o777, parents=False):
+    def mkdir(self, mode=0o777, parents=False, exist_ok=False):
         if not parents:
-            self._accessor.mkdir(self, mode)
+            try:
+                self._accessor.mkdir(self, mode)
+            except OSError as e:
+                if not (exist_ok and e.errno == EEXIST):
+                    raise
         else:
             try:
                 self._accessor.mkdir(self, mode)
             except OSError as e:
-                if e.errno != ENOENT:
+                if e.errno == ENOENT:
+                    self.parent.mkdir(mode, True, exist_ok)
+                    try:
+                        self._accessor.mkdir(self, mode)
+                    except OSError as e2:
+                        if not (exist_ok and e2.errno == EEXIST):
+                            raise
+                elif not (exist_ok and e.errno == EEXIST):
                     raise
-                self.parent.mkdir(mode, True)
-                self._accessor.mkdir(self, mode)
 
     def chmod(self, mode):
         """
