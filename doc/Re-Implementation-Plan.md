@@ -1,4 +1,4 @@
-# Implementation Plan for `pyonetrue` v0.5.0
+# Implementation Plan for `pyonetrue` v0.5.4
 
 This plan refocuses **pyonetrue** on its compiler-like mission: _flatten valid Python modules into a unified, executable whole,_ using **`ast.parse()`** for span extraction rather than the CleanEdit library.
 
@@ -57,8 +57,8 @@ This plan refocuses **pyonetrue** on its compiler-like mission: _flatten valid P
 
 ## Phase 4: Version Bump & Documentation
 
-1. **Bump version**  
-   - Set `__version__ = '0.5.0'` in `src/pyonetrue/__init__.py`.
+1. **Bump version**
+   - Set `__version__ = '0.5.4'` in `src/pyonetrue/__init__.py`.
 2. **Update README & CHANGELOG**  
    - Document the shift to AST-based extraction and removal of CleanEdit dependency.
 3. **Migration notes**  
@@ -66,8 +66,8 @@ This plan refocuses **pyonetrue** on its compiler-like mission: _flatten valid P
 
 ## Phase 5: Release & Packaging
 
-1. **Tag release**  
-   - Create Git tag `v0.5.0` in the **pyonetrue** repo.
+1. **Tag release**
+   - Create Git tag `v0.5.4` in the **pyonetrue** repo.
 2. **Publish package**  
    - Build and upload to PyPI or internal index.
 3. **Archive snapshot**  

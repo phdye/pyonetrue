@@ -1,6 +1,6 @@
 # 🛠️ `pyonetrue` Developer Guide
 
-Version: **0.5.3**
+Version: **0.5.4**
 Status: **Stable, Syntax-only Pipeline**
 
 ---
