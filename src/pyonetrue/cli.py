@@ -25,7 +25,7 @@ written as:
 <package>/__main__.py is a special module that is executed when the
 package is run as a script.  It is typically used to provide a command-line
 interface to the package.  If such a module is present, it will be included
-at the end of without reordering unless the --no-cli option is used.  Other
+at the end of without reordering unless the --module-only option is used.  Other
 __main__.py modules are not included by default.  If you want to include
 one of them instead, you can use the --main-from option to specify the
 sub-package from which to include __main__.py.
@@ -41,21 +41,17 @@ Default behavior is to :
 Options:
   -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
   -o, --output <file>      Write output to file (default: stdout).
-  --no-cli                 Do not include package's __main__.py.
-  -e, --entry <entry>      Specify entry function as module[:func].  If repeated,
-                           produces multiple single module programs. If no entry is
-                           specified, the module's __main__ guard will be used. If 
-                           --no-cli is specified, this option is ignored.
+  -M, --module-only        Build a pure module without an entry point, i.e. no
+                           __main__ guard, no __main__.py, no CLI.
+  --entry <entry>          Explicitly build for the given entry point.  May be
+                           repeated. If omitted, all entry points are built.
   -m, --main-from <mod>    Include __main__.py from the specified sub-package.
                            Only one __main__.py module is allowed.
-                           Incompatible with --no-cli.
+                           Incompatible with --module-only.
   -a, --all-guards         Include all __main__ guards. (default: discard)
   -g, --guards-from <mod>  Include __main__ guards only from <mod>.
   -E, --exclude <exclude>  Exclude specified packages or modules, comma separated.
   -i, --include <include>  Exclude specified packages or modules, comma separated.
-  --entry <entry>          Explicitly build for the given entry point. May be
-                           repeated. If omitted, all defined entry points are
-                           used.
   --ignore-clashes         Allow duplicate top-level names without error.
   -h, --help               Show this help message.
   --version                Show version.
@@ -98,8 +94,6 @@ def discover_defined_entry_points(package_path: Path) -> list[str]:
             pass
     return entries
 
-__version__ = "0.5.4"
-
 def main(argv=sys.argv):
     """Main entry point for the CLI tool.
 
@@ -118,8 +112,8 @@ def main(argv=sys.argv):
     """
 
     args = docopt(USAGE, argv=argv[1:], version=__version__)
-    if args['--no-cli'] and args['--main-from']:
-        raise CLIOptionError("cannot specify both --no-cli and --main-from")
+    if args['--module-only'] and args['--main-from']:
+        raise CLIOptionError("cannot specify both --module-only and --main-from")
 
     entries = args.get('--entry') or []
     if not isinstance(entries, list):
@@ -142,7 +136,7 @@ def main(argv=sys.argv):
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
-        no_cli=bool(args.get('--no-cli')),
+        no_cli=bool(args.get('--module-only')),
         main_from=args.get('--main-from', '').split(',') if args.get('--main-from') else [],
         guards_all=bool(args.get('--all-guards')),
         guards_from=args.get('--guards-from', '').split(',') if args.get('--guards-from') else [],
