@@ -57,7 +57,9 @@ The pipeline converts each source file into a list of `Span` objects. These span
 
 ## Extensibility
 
-The modular separation between CLI, context management, AST extraction, and import normalization allows future features such as plugin-based import handlers or additional analysis passes. Each component exposes clear responsibilities, keeping the flattening logic independent from command parsing and user interface concerns.
+The modular separation between CLI, context management, AST extraction, and import normalization allows additional analysis passes such as plugin-based import handlers. Each component exposes clear responsibilities, keeping the flattening logic independent from command parsing and user interface concerns.
+
+The next release expands this pipeline with rename-aware name deduplication. Import normalization will produce a rename map for any clashing identifiers and apply those renames throughout the AST so modules can be flattened without manual aliasing. Along with this, AST-level conflict resolution rewrites conflicting definitions across modules to maintain unique names in the final output.
 
 ## Determinism and Validation (v0.8.0)
 
