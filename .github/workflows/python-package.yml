@@ -24,3 +24,9 @@ jobs:
     - name: Run tests
       run: |
         pytest tests
+    - name: Upload flat pyonetrue.py
+      if: always()  # Always attempt upload, even if previous steps fail, for debugging
+      uses: actions/upload-artifact@v3
+      with:
+        name: flat-pyonetrue
+        path: flat/pyonetrue.py
