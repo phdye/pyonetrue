@@ -136,7 +136,7 @@ def main(argv=sys.argv):
     ctx = FlatteningContext(
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
-        no_cli=bool(args.get('--module-only')),
+        module_only=bool(args.get('--module-only')),
         main_from=args.get('--main-from', '').split(',') if args.get('--main-from') else [],
         guards_all=bool(args.get('--all-guards')),
         guards_from=args.get('--guards-from', '').split(',') if args.get('--guards-from') else [],
@@ -147,17 +147,20 @@ def main(argv=sys.argv):
         entry_points=entries,
     )
 
+    if ctx.module_only and (ctx.main_from or ctx.entry_points):
+        raise CLIOptionError("cannot specify --module-only with --main-from or --entry")
+
+    if ctx.main_from and ctx.entry_points:
+        raise CLIOptionError("cannot specify both --main-from and --entry")
+
     if not ctx.entry_points:
         ctx.entry_points = discover_defined_entry_points(Path(ctx.package_path))
 
-    ctx.main_from = ctx.main_from[0] if ctx.main_from else None
-    if ctx.entry_funcs:
-        ctx.no_cli = True
-        ctx.main_from = None
-    elif ctx.main_from:
-        ctx.no_cli = False
-    elif not ctx.no_cli:
-        ctx.main_from = '__main__' # primary package
+    if not ctx.entry_points and not ctx.module_only:
+        ctx.main_from = ctx.main_from[0] if ctx.main_from else None
+        if not ctx.main_from:
+            ctx.main_from = '__main__' # primary package
+
     if args['--show-cli-args']:
         print(f"CLI args:\n{ctx}")
         return 0
@@ -177,7 +180,7 @@ def main(argv=sys.argv):
         sub_ctx = FlatteningContext(
             package_path=ctx.package_path,
             output=output_path,
-            no_cli=ctx.no_cli,
+            module_only=ctx.module_only,
             main_from=[mod] if mod else [],
             guards_all=ctx.guards_all,
             guards_from=ctx.guards_from,
@@ -189,8 +192,8 @@ def main(argv=sys.argv):
 
         sub_ctx.main_from = sub_ctx.main_from[0] if sub_ctx.main_from else None
         if sub_ctx.main_from:
-            sub_ctx.no_cli = False
-        elif not sub_ctx.no_cli:
+            sub_ctx.module_only = False
+        elif not sub_ctx.module_only:
             sub_ctx.main_from = "__main__"
 
         sub_ctx.discover_modules()

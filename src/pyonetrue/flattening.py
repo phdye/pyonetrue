@@ -30,7 +30,7 @@ class FlatteningContext:
     guard_sources      : dict[str, List[Span]]         = field(default_factory=dict)
 
     # Discovery -- inclusion/exclusion
-    no_cli             : bool                          = False
+    module_only             : bool                          = False
     main_from          : List[str]                     = field(default_factory=list)
     exclude            : List[str]                     = field(default_factory=list)
     include            : List[str]                     = field(default_factory=list)
@@ -140,7 +140,7 @@ class FlatteningContext:
         if DEBUG: print(f"\nDEBUG: Discovering modules in {self.package_path = }", file=sys.stderr)
 
         # Determine exactly which __main__.py (if any) we are allowed to accept
-        if self.no_cli:
+        if self.module_only:
             allowed_main = None
         elif self.main_from:
             allowed_main = normalize_a_module_name(self.main_from, self.package_name)
@@ -167,7 +167,7 @@ class FlatteningContext:
             if full_mod.endswith(".__main__"):
                 if allowed_main is None:
                     if DEBUG: print(f"DEBUG: Discover - no cli - skipping module {full_mod = }, from {subpath = }", file=sys.stderr)
-                    continue  # no_cli active, skip all __main__.py
+                    continue  # module_only active, skip all __main__.py
                 if allowed_main and full_mod != allowed_main:
                     if DEBUG: print(f"DEBUG: Discover - wrong cli - skipping module {full_mod = }, from {subpath = }", file=sys.stderr)
                     continue  # only allow exactly the requested __main__.py
@@ -230,7 +230,7 @@ class FlatteningContext:
 
     def get_main_spans(self):
         main_mod, main_spans = self.main_py
-        if not (main_mod and main_spans and not self.no_cli):
+        if not (main_mod and main_spans and not self.module_only):
             return []
         return [s for s in main_spans if s.kind != "import"]
 

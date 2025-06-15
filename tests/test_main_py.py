@@ -50,7 +50,7 @@ def test_cli_main_from(tmp_path):
     assert "DRIVER" not in result.stdout
     assert "INNER" in result.stdout
 
-def test_cli_main_from_with_no_cli_is_invalid(tmp_path):
+def test_cli_main_from_with_module_only_is_invalid(tmp_path):
     pkg = tmp_path / "pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text("")
@@ -62,7 +62,7 @@ def test_cli_main_from_with_no_cli_is_invalid(tmp_path):
     with pytest.raises(Exception):
         _ = run_cli(["--module-only", "--main-from=sub", str(pkg)])
 
-def test_cli_no_cli(tmp_path):
+def test_cli_module_only(tmp_path):
     pkg = tmp_path / "pkg"
     pkg.mkdir()
     (pkg / "__init__.py").write_text('print("INIT")')
