@@ -16,7 +16,7 @@ pyonetrue --output foobar.py foobar
 Flatten a package into a single module, without CLI:
 
 ```bash
-pyonetrue --no-cli --output foobar.py foobar
+pyonetrue --module-only --output foobar.py foobar
 ```
 
 Flatten a package directory into a single module:
@@ -65,8 +65,9 @@ Output is written to `stdout` or `--output` path.
 | Option                | Description                                    |
 | --------------------- | ---------------------------------------------- |
 | `--output <file>`     | Write to specified file (default: stdout)      |
-| `--no-cli`            | Exclude package's `__main__.py`                |
+| `--module-only`       | Build without any `__main__.py` or CLI         |
 | `--main-from <mod>`   | Include only this module's `__main__.py`       |
+| `--entry <entry>`     | Build specifically for the given entry point   |
 | `--all-guards`        | Include all `if __name__ == '__main__'` blocks |
 | `--guards-from <mod>` | Include guards only from these modules         |
 | `--exclude <mods>`    | Comma-separated modules/packages to exclude    |
@@ -81,7 +82,7 @@ Output is written to `stdout` or `--output` path.
 | Situation           | Behavior                                        |
 | ------------------- | ----------------------------------------------- |
 | Default             | Primary `__main__.py` is appended               |
-| `--no-cli`          | `__main__.py` is excluded                       |
+| `--module-only`     | `__main__.py` is excluded                       |
 | `--main-from x`     | Only `x/__main__.py` is included                |
 | `--all-guards`      | Includes all `if __name__ == '__main__'` blocks |
 | `--guards-from x,y` | Only from `x`, `y`                              |

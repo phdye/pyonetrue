@@ -24,45 +24,35 @@ written as:
 <package>/__main__.py is a special module that is executed when the
 package is run as a script.  It is typically used to provide a command-line
 interface to the package.  If such a module is present, it will be included
-at the end of without reordering unless the --no-cli option is used.  Other
+at the end of without reordering unless the --module-only option is used.  Other
 __main__.py modules are not included by default.  If you want to include
 one of them instead, you can use the --main-from option to specify the
 sub-package from which to include __main__.py.
 
 Default behavior is to :
 * All relative imports are eliminated. Flattened output is fully self-contained.
-* Main guards are discarded, but this can be changed with the --main-all
-  or --main-from options.
+* Main guards are discarded, but this can be changed with the --all-guards
+  or --guards-from options.
 * Write the output to stdout, but this can be changed with the --output
 * Name clashes, duplicate top-level names, are not allowed by default.
 * If `__main__.py` is being included, prepend shebang.
 
 Options:
-  -s, --shebang <shebang>  Prepend <sheband> if `__main__.py` is being appended.  [default: "#!/usr/bin/env python3"]
+  -s, --shebang <shebang>  Prepend <shebang> if `__main__.py` is being appended.  [default: #!/usr/bin/env python3]
   -o, --output <file>      Write output to file (default: stdout).
-  --no-cli                 Do not include package's __main__.py.
+  -M, --module-only        Build a pure module without an entry point, i.e. no
+                           __main__ guard, no __main__.py, no CLI.
+  --entry <entry>          Explicitly build for the given entry point.  May be
+                           repeated. If omitted, all entry points are built.
   -m, --main-from <mod>    Include __main__.py from the specified sub-package.
                            Only one __main__.py module is allowed.
-                           Incompatible with --no-cli.
+                           Incompatible with --module-only.
   -a, --all-guards         Include all __main__ guards. (default: discard)
   -g, --guards-from <mod>  Include __main__ guards only from <mod>.
-  -e, --exclude <exclude>  Exclude specified packages or modules, comma separated.
-  -i, --include <include>  Exclude specified packages or modules, comma separated.
+  -E, --exclude <exclude>  Exclude specified packages or modules, comma separated.
+  -i, --include <include>  Include specified packages or modules, comma separated.
   --ignore-clashes         Allow duplicate top-level names without error.
-
-Analysis Options:          Any anlysis option precludes flattening
-  --summary                Summarize over all modules, rather than per-module.
-  --map <json>	           Emit JSON-encoded map: {module: [symbol1, symbol2, ...]}
-  --mains                  List each __main__.py.
-  --imports                List normalized imports.
-  --imports-by-file        List all imports per file.
-  -y, --symbols            List all top-level symbols grouped by type (imports, functions, classes)
-  -t, --structure          Output a structural outline of all modules: imports, defs, guards, main
-  -d, --duplicates         List all duplicated top-level names across modules (like --ignore-clashes dry run)
-  -q, --guards             List all if __name__ == '__main__' blocks by file
-  --empty-files            Report which .py files contain no relevant spans (only comments, docstrings, or whitespace)
-  --counts	               Show a summary count of spans per file: imports, classes, functions, etc.
-
-General Options:
   -h, --help               Show this help message.
   --version                Show version.
+  --show-cli-args          Show the command line arguments that would be passed to the
+                           CLI and exit.  This is useful for debugging.

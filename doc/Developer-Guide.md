@@ -90,8 +90,9 @@ Order is always:
 
 | Flag                | Meaning                                |
 | ------------------- | -------------------------------------- |
-| `--no-cli`          | Skip `__main__.py`                     |
+| `--module-only`     | Build without any `__main__.py` or CLI |
 | `--main-from x`     | Include only `x/__main__.py`           |
+| `--entry <entry>`  | Build specifically for the given entry |
 | `--guards-from x,y` | Include main guards from `x`, `y` only |
 | `--all-guards`      | Include all guards                     |
 | `--ignore-clashes`  | Suppress duplicate name check          |

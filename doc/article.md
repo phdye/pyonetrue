@@ -83,7 +83,7 @@ You choose your flattening behavior:
 
 * Want the CLI included? Use `--main-from foo.cli`.
 * Want every `__main__` guard? Use `--all-guards`.
-* Want a pure library? Use `--no-cli`.
+* Want a pure library? Use `--module-only`.
 
 The philosophy became clear:
 

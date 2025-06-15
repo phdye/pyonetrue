@@ -33,7 +33,7 @@
 
 See:
 
-* `--no-cli`, `--main-from`, `--all-guards`, `--guards-from` options
+* `--module-only`, `--main-from`, `--all-guards`, `--guards-from` options
 
 **✔ Result:** Rather than fighting Python’s semantics, `pyonetrue` gives the user **total control** over what is treated as the executable entrypoint. It **never assumes anything magical about module state** — it’s a deliberate design to **be explicit** where Python is implicit.
 
