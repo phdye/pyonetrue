@@ -1,5 +1,3 @@
-"""Custom exceptions for the pyonetrue flattening tool."""
-
 """
 Custom exceptions for pyonetrue, each representing a single, specific error scenario.
 """

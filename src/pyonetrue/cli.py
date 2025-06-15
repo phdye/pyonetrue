@@ -79,7 +79,7 @@ from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
 
-__version__ = "0.6.8"
+__version__ = "0.7.1"
 
 def discover_defined_entry_points(package_path: Path) -> list[str]:
     """Return entry point modules defined in a local pyproject.toml."""

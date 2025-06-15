@@ -1,5 +1,5 @@
 import sys
-from pathlib import Path
+
 import importlib.util
 from dataclasses import dataclass, field
 from typing import List, Union
@@ -13,6 +13,10 @@ from .exceptions import (
     ModuleInferenceError,
     PathError,
 )
+try :
+    from pathlib import Path
+except ImportError:
+    from .vendor.pathlib import Path
 
 DEBUG = False
 

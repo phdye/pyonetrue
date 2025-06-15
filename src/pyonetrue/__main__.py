@@ -3,9 +3,6 @@
 Runs the main CLI function to flatten the specified package or file.
 """
 
-"""
-TODO: Add module-level docstring.
-"""
 import sys
 from .cli import main
 
