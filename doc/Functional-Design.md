@@ -15,6 +15,9 @@ The tool is primarily executed via `pyonetrue.cli.main` or `python -m pyonetrue`
 - Validates flag combinations and builds a `FlatteningContext` for each entry point.
 - Supports flags such as `--module-only`, `--main-from`, `--entry`, `--all-guards`, `--guards-from`, `--exclude`, and `--include`.
 - Writes the flattened output either to stdout or to a file/directory.
+- Detects entry points from `pyproject.toml` when `--entry` is not provided.
+- `--shebang` allows specifying a custom interpreter line when including `__main__.py`.
+- `--show-cli-args` prints the resolved arguments and exits.
 
 ### FlatteningContext (`src/pyonetrue/flattening.py`)
 - Core object orchestrating the flattening pipeline.
@@ -24,6 +27,8 @@ The tool is primarily executed via `pyonetrue.cli.main` or `python -m pyonetrue`
 - Aggregates main guard spans and the chosen `__main__.py` content.
 - Normalizes imports and assembles final output spans with `get_final_output_spans()`.
 - Detects duplicate top-level definitions unless `ignore_clashes` is set.
+- Stores spans per module in `module_spans` and main guard locations in `guard_sources`.
+- Provides helper methods like `gather_root_spans()` and `gather_main_guard_spans()` before final assembly.
 
 ### FlatteningModule (`src/pyonetrue/flattening.py`)
 - Represents one source file within the context.
@@ -34,6 +39,7 @@ The tool is primarily executed via `pyonetrue.cli.main` or `python -m pyonetrue`
 - Parses each file via `ast.parse` and converts nodes to `Span` objects.
 - Each `Span` records the raw source text and its kind (`import`, `class`, `function`, `logic`, or `main_guard`).
 - Spans retain original order and include decorator lines when applicable.
+- Detects `if __name__ == "__main__"` blocks and labels them as `main_guard`.
 
 ### Import Normalization (`src/pyonetrue/normalize_imports.py`)
 - Eliminates all relative imports and local absolute imports.
@@ -50,10 +56,11 @@ The tool is primarily executed via `pyonetrue.cli.main` or `python -m pyonetrue`
 2. **Module Discovery** – Source files under the root are collected in sorted order. Inclusion rules decide which modules or subpackages are flattened and whether `__main__.py` from a submodule should be used.
 3. **Span Extraction** – Each file is parsed into ordered `Span` objects. Main guard blocks are recorded separately so they can be included or omitted later.
 4. **Gathering** – Root-level docstring, `__all__` declaration, imports, and other logic are gathered. Non-root module spans are also collected, except for main guards which may be aggregated separately.
-5. **Import Normalization** – All collected import spans are run through `normalize_imports` to rewrite, deduplicate, and group them.
-6. **Assembly** – `normalize_and_assemble` arranges docstring, future imports, regular imports, optional `__all__`, classes, functions, top-level logic, chosen main guard blocks, and optionally `__main__.py`. Blank lines are inserted to maintain readability.
-7. **Clash Detection** – `check_clashes` verifies that top-level functions and classes do not share names with each other or with imported symbols unless `ignore_clashes` is specified.
-8. **Output Generation** – The resulting spans are concatenated to produce the final module text, optionally prefixed with a shebang if `__main__.py` is included.
+5. **Span Organization** – `gather_root_spans`, `gather_module_spans`, and `gather_main_guard_spans` collect categorized spans for later assembly.
+6. **Import Normalization** – All collected import spans are run through `normalize_imports` to rewrite, deduplicate, and group them.
+7. **Assembly** – `normalize_and_assemble` arranges docstring, future imports, regular imports, optional `__all__`, classes, functions, top-level logic, chosen main guard blocks, and optionally `__main__.py`. Blank lines are inserted to maintain readability.
+8. **Clash Detection** – `check_clashes` verifies that top-level functions and classes do not share names with each other or with imported symbols unless `ignore_clashes` is specified.
+9. **Output Generation** – The resulting spans are concatenated to produce the final module text, optionally prefixed with a shebang if `__main__.py` is included.
 
 ## Handling of Entry Points
 - By default, only the package's primary `__main__.py` is eligible for inclusion. The `--main-from` option specifies a subpackage that provides the `__main__.py` body instead. Supplying `--module-only` suppresses all entry-point logic.
