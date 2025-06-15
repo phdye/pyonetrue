@@ -1,0 +1,7 @@
+#!/bin/bash
+
+for subpath in "$@" ; do
+    git submodule deinit -f "${subpath}"
+    git rm -f "${subpath}"
+    rm -rf .git/modules/"${subpath}"
+done

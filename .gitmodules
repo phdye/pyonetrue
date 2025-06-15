@@ -1,9 +1,6 @@
 [submodule "issue/future-imports-must-be-at-beginning/cygport-wrapper"]
 	path = issue/future-imports-must-be-at-beginning/cygport-wrapper
 	url = https://github.com/phdye/cygport-wrapper
-[submodule "issue/multiple-entrypoints/logtool"]
-	path = issue/multiple-entrypoints/logtool
-	url = https://github.com/phdye/logtool
 [submodule "issue/multiple-entrypoints/dlocate"]
 	path = issue/multiple-entrypoints/dlocate
 	url = https://github.com/phdye/dlocate
