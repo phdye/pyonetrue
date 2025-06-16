@@ -71,27 +71,36 @@ try :
 except ImportError:
     from .vendor.pathlib import Path
 
+if sys.version_info < (3, 10):
+    from importlib_metadata import entry_points
+else:
+    from importlib.metadata import entry_points
+
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
 
 __version__ = "0.7.1"
 
-def discover_defined_entry_points(package_path: Path) -> list[str]:
-    """Return entry point modules defined in a local pyproject.toml."""
-    pyproject = package_path / "pyproject.toml"
-    if not pyproject.exists():
-        pyproject = package_path.parent / "pyproject.toml"
+def discover_script_entry_points(package_path: Path) -> list[str]:
+    """Discover script entry points in the given package path.
+
+    Args:
+            package_path (Path): The path to the package directory.
+
+    Returns:
+            list[Dict[name,Tuple(module,func)]]: Discovered entry points.
+    """
+    eps = entry_points()
+    if not eps:
+        return []
     entries = []
-    if pyproject.exists():
-        try:
-            data = tomllib.loads(pyproject.read_text())
-            scripts = data.get("project", {}).get("scripts", {})
-            for target in scripts.values():
-                mod = str(target).split(":", 1)[0]
-                entries.append(mod)
-        except Exception:
-            pass
+    # TODO: permit user to specify entry point group names
+    for group in ["scripts", "console_scripts", "gui_scripts"]:
+        ep = eps.select(group=group)
+        if not ep:
+            continue
+        entries.extend(ep)
     return entries
 
 def main(argv=sys.argv):
@@ -112,19 +121,27 @@ def main(argv=sys.argv):
     """
 
     args = docopt(USAGE, argv=argv[1:], version=__version__)
+
     if args['--module-only'] and args['--main-from']:
         raise CLIOptionError("cannot specify both --module-only and --main-from")
+    if args['--module-only'] and args['--entry']:
+        raise CLIOptionError("cannot specify both --module-only and --entry")
+    if args['--main-from'] and args['--entry']:
+        raise CLIOptionError("cannot specify both --main-from and --entry")
+
+    if args['--main-from']:
+        if ',' in args['--main-from']:
+            raise CLIOptionError("--main-from cannot specify multiple modules")
+        if not args['--main-from'].strip():
+            raise CLIOptionError("--main-from cannot be empty")
 
     entries = args.get('--entry') or []
     if not isinstance(entries, list):
         entries = [entries] if entries else []
-    
-    entries = args.get('--entry')
-    if entries and not isinstance(entries, list):
-        entries = [entries]
+
     parsed_funcs = []
 
-    for ent in entries or []:
+    for ent in entries:
         if ':' in ent:
             ent = ent.rsplit(':', 1)[1]
         elif '.' in ent:
@@ -139,7 +156,7 @@ def main(argv=sys.argv):
         package_path=args['<input>'],
         output=args.get('--output') or 'stdout',
         module_only=bool(args.get('--module-only')),
-        main_from=args.get('--main-from', '').split(',') if args.get('--main-from') else [],
+        main_from=args.get('--main-from') or None,
         guards_all=bool(args.get('--all-guards')),
         guards_from=args.get('--guards-from', '').split(',') if args.get('--guards-from') else [],
         ignore_clashes=bool(args.get('--ignore-clashes')),
@@ -161,6 +178,23 @@ def main(argv=sys.argv):
     if not ctx.entry_points and not ctx.module_only:
         ctx.main_from = ctx.main_from[0] if ctx.main_from else None
         if not ctx.main_from:
+            # Create fake Entry Point structure for the main module
+            # as if it were returned by discover_script_entry_points()
+            # i.e. by importlib_metadata.entry_points()
+            # EntryPoint object: Each EntryPoint object represents a single
+            # entry point and has the following attributes:
+            #   .name:    The name of the entry point (string).
+            #   .group:   The group to which the entry point belongs (string).
+            #   .value:   The value associated with the entry point, often a string
+            #             describing the location of the callable or module.
+            #   .module:  The module name from the .value.
+            #   .attr:    The attribute name from the .value.
+            #   .extras:  A list of strings representing extra dependencies
+            #             required by the entry point.
+            #   .load():  A method that attempts to load and return the object
+            #             referenced by the entry point.
+            #   .dist:    A Distribution object representing the distribution that
+            #             defines the entry point.
             ctx.main_from = '__main__' # primary package
 
     if args['--show-cli-args']:
