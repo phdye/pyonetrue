@@ -30,8 +30,8 @@ class FlatteningContext:
     guard_sources      : dict[str, List[Span]]         = field(default_factory=dict)
 
     # Discovery -- inclusion/exclusion
-    module_only             : bool                          = False
-    main_from          : List[str]                     = field(default_factory=list)
+    module_only        : bool                          = False
+    main_from          : str | None                    = None
     exclude            : List[str]                     = field(default_factory=list)
     include            : List[str]                     = field(default_factory=list)
 
