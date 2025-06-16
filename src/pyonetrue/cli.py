@@ -74,6 +74,7 @@ except ImportError:
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
+from importlib.metadata import entry_points
 
 __version__ = "0.7.1"
 
@@ -92,6 +93,23 @@ def discover_defined_entry_points(package_path: Path) -> list[str]:
                 entries.append(mod)
         except Exception:
             pass
+    return entries
+
+def discover_script_entry_points(package_path: Path) -> list[str]:
+    """Discover script entry points for the package."""
+    eps = entry_points()
+    if not eps:
+        return []
+    pkg_name = Path(package_path).name
+    entries = []
+    for group in ["scripts", "console_scripts", "gui_scripts"]:
+        group_eps = eps.select(group=group)
+        if not group_eps:
+            continue
+        for ep in group_eps:
+            target_mod = ep.value.split(":", 1)[0]
+            if target_mod == pkg_name or target_mod.startswith(pkg_name + "."):
+                entries.append(ep.value)
     return entries
 
 def main(argv=sys.argv):
@@ -158,10 +176,13 @@ def main(argv=sys.argv):
     if not ctx.entry_points:
         ctx.entry_points = discover_defined_entry_points(Path(ctx.package_path))
 
+    if not ctx.entry_points:
+        ctx.entry_points = discover_script_entry_points(Path(ctx.package_path))
+
     if not ctx.entry_points and not ctx.module_only:
         ctx.main_from = ctx.main_from[0] if ctx.main_from else None
         if not ctx.main_from:
-            ctx.main_from = '__main__' # primary package
+            ctx.main_from = '__main__'  # primary package
 
     if args['--show-cli-args']:
         print(f"CLI args:\n{ctx}")
