@@ -237,7 +237,11 @@ def main(argv=sys.argv):
         print(f"CLI args:\n{ctx}")
         return 0
 
-    entry_mods = ctx.entry_points or ([ctx.main_from] if ctx.main_from else [])
+    entry_mods = (
+        [ep.module for ep in ctx.entry_points]
+        if ctx.entry_points
+        else ([ctx.main_from] if ctx.main_from else [])
+    )
     if not entry_mods:
         entry_mods = [None]
 
