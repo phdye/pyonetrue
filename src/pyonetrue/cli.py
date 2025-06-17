@@ -75,6 +75,7 @@ from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
 from importlib.metadata import entry_points
+import types
 
 __version__ = "0.7.1"
 
@@ -182,7 +183,22 @@ def main(argv=sys.argv):
     if not ctx.entry_points and not ctx.module_only:
         ctx.main_from = ctx.main_from[0] if ctx.main_from else None
         if not ctx.main_from:
-            ctx.main_from = '__main__'  # primary package
+            # Create a fake Entry Point structure for the package's main module
+            # mirroring the attributes of ``importlib.metadata.EntryPoint``.
+            # This is only used for informational purposes. ``ctx.entry_points``
+            # remains a list of module strings for downstream processing.
+            fake_ep = types.SimpleNamespace()
+            fake_ep.name = ctx.package_name
+            fake_ep.group = "console_scripts"
+            fake_ep.value = f"{ctx.package_name}.__main__:main"
+            fake_ep.module = f"{ctx.package_name}.__main__"
+            fake_ep.attr = "main"
+            fake_ep.extras = []
+            fake_ep.dist = None
+            fake_ep.load = lambda: None
+
+            ctx.entry_points = [fake_ep.module]
+            ctx.main_from = "__main__"  # primary package
 
     if args['--show-cli-args']:
         print(f"CLI args:\n{ctx}")
