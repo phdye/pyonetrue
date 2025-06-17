@@ -79,6 +79,8 @@ else:
 from .flattening import FlatteningContext
 from .exceptions import CLIOptionError
 from .vendor.docopt import docopt
+from importlib.metadata import entry_points
+import types
 
 __version__ = "0.7.1"
 
@@ -101,6 +103,23 @@ def discover_script_entry_points(package_path: Path) -> list[str]:
         if not ep:
             continue
         entries.extend(ep)
+    return entries
+
+def discover_script_entry_points(package_path: Path) -> list[str]:
+    """Discover script entry points for the package."""
+    eps = entry_points()
+    if not eps:
+        return []
+    pkg_name = Path(package_path).name
+    entries = []
+    for group in ["scripts", "console_scripts", "gui_scripts"]:
+        group_eps = eps.select(group=group)
+        if not group_eps:
+            continue
+        for ep in group_eps:
+            target_mod = ep.value.split(":", 1)[0]
+            if target_mod == pkg_name or target_mod.startswith(pkg_name + "."):
+                entries.append(ep.value)
     return entries
 
 def main(argv=sys.argv):
@@ -175,27 +194,44 @@ def main(argv=sys.argv):
     if not ctx.entry_points:
         ctx.entry_points = discover_defined_entry_points(Path(ctx.package_path))
 
+    if not ctx.entry_points:
+        ctx.entry_points = discover_script_entry_points(Path(ctx.package_path))
+
     if not ctx.entry_points and not ctx.module_only:
+        fake_ep = types.SimpleNamespace()
         ctx.main_from = ctx.main_from[0] if ctx.main_from else None
         if not ctx.main_from:
-            # Create fake Entry Point structure for the main module
-            # as if it were returned by discover_script_entry_points()
-            # i.e. by importlib_metadata.entry_points()
-            # EntryPoint object: Each EntryPoint object represents a single
-            # entry point and has the following attributes:
-            #   .name:    The name of the entry point (string).
-            #   .group:   The group to which the entry point belongs (string).
-            #   .value:   The value associated with the entry point, often a string
-            #             describing the location of the callable or module.
-            #   .module:  The module name from the .value.
-            #   .attr:    The attribute name from the .value.
-            #   .extras:  A list of strings representing extra dependencies
-            #             required by the entry point.
-            #   .load():  A method that attempts to load and return the object
-            #             referenced by the entry point.
-            #   .dist:    A Distribution object representing the distribution that
-            #             defines the entry point.
             ctx.main_from = '__main__' # primary package
+        # Create fake Entry Point structure for the main module
+        # as if it were returned by discover_script_entry_points()
+        # i.e. by importlib_metadata.entry_points()
+        # EntryPoint object: Each EntryPoint object represents a single
+        # entry point and has the following attributes:
+        #   .name:    The name of the entry point (string).
+        #   .group:   The group to which the entry point belongs (string).
+        #   .value:   The value associated with the entry point, often a string
+        #             describing the location of the callable or module.
+        #   .module:  The module name from the .value.
+        #   .attr:    The attribute name from the .value.
+        #   .extras:  A list of strings representing extra dependencies
+        #             required by the entry point.
+        #   .load():  A method that attempts to load and return the object
+        #             referenced by the entry point.
+        #   .dist:    A Distribution object representing the distribution that
+        #             defines the entry point.
+        # Create a fake Entry Point structure for the package's main module
+        # mirroring the attributes of ``importlib.metadata.EntryPoint``.
+        # This is only used for informational purposes. ``ctx.entry_points``
+        # remains a list of module strings for downstream processing.
+        fake_ep.group = "console_scripts"
+        fake_ep.name = ctx.package_name
+        fake_ep.attr = "main"
+        fake_ep.module = f"{ctx.package_name}.{ctx.main_from}"
+        fake_ep.value = f"{fake_ep.module}:{fake_ep.attr}"
+        fake_ep.extras = []
+        fake_ep.dist = None
+        fake_ep.load = lambda: None
+        ctx.entry_points = [fake_ep]
 
     if args['--show-cli-args']:
         print(f"CLI args:\n{ctx}")

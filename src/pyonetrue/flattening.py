@@ -151,7 +151,7 @@ class FlatteningContext:
 
         if DEBUG: print(f"DEBUG: Discover - {allowed_main = }", file=sys.stderr)
 
-        for subpath in path.rglob('*.py'):
+        for subpath in sorted(path.rglob('*.py')):
             relpath = subpath.relative_to(path)
             dotted = str(relpath.with_suffix('')).replace('/', '.').replace('\\', '.')
             if dotted.endswith(".__init__"):
